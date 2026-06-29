@@ -6,7 +6,7 @@
 
 - **Scope:** v1 = the live **auction only**. Season scoring (the whole all-15-vs-weekly-XI/captain question, B1–B4) is **deferred** — out of v1.
 - **Draft night:** in person → projector/big-screen board view **in v1**.
-- **Repo:** public GitHub `github.com/miloli-lab/epl-como-fantasy-26-27` (the miloli-lab pattern), **MIT**. Auth via `gh` (no PAT needed).
+- **Repo:** public GitHub `github.com/miloli-git/epl-como-fantasy-26-27` (the miloli-git pattern), **MIT**. Auth via `gh` (no PAT needed).
 - **Auction date:** **Aug 2, 2026** (~5 weeks runway from today).
 - **Managers:** **8** (Organiser: "8 is the right number"); roster still being recruited.
 - **Budget:** **$2000** (overrides Builder's "$200" note in the commissioner thread).

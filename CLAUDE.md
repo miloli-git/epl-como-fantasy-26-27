@@ -4,7 +4,7 @@ Context for any AI coding agent (Claude Code / Cursor) working this repo.
 
 ## What this is
 
-Config-driven **live auction-draft** tool for a private fantasy league. **v1 target: the auction, in person, Aug 2 2026.** Season scoring + rebids are deferred (see `docs/PRD.md` Future). **Public repo** at `github.com/miloli-lab/epl-como-fantasy-26-27` — shared tooling only, no real names, no secrets, no private valuation models. Read `docs/PRD.md`, `docs/DATA-MODEL.md`, `docs/HANDOFF.md` before changing anything.
+Config-driven **live auction-draft** tool for a private fantasy league. **v1 target: the auction, in person, Aug 2 2026.** Season scoring + rebids are deferred (see `docs/PRD.md` Future). **Public repo** at `github.com/miloli-git/epl-como-fantasy-26-27` — shared tooling only, no real names, no secrets, no private valuation models. Read `docs/PRD.md`, `docs/DATA-MODEL.md`, `docs/HANDOFF.md` before changing anything.
 
 ## Stack
 

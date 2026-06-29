@@ -2,7 +2,7 @@
 
 > Status: DRAFT for review.
 
-Repo: `github.com/miloli-lab/epl-como-fantasy-26-27` (public, MIT). v1 scope is the **live auction only** (in person, Aug 2 2026); season scoring + rebids are deferred.
+Repo: `github.com/miloli-git/epl-como-fantasy-26-27` (public, MIT). v1 scope is the **live auction only** (in person, Aug 2 2026); season scoring + rebids are deferred.
 
 ## The split
 
