@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, initial-scale=1">
+<title>Projector Board — Leaderboard + Claude Brief</title>
+<style>
+  :root{
+    --ink:#111;
+    --paper:#fff;
+    --line:#222;
+    --grey-1:#f2f2f2;
+    --grey-2:#e2e2e2;
+    --grey-3:#cfcfcf;
+    --grey-4:#9a9a9a;
+    --grey-5:#6f6f6f;
+    --dim:#8a8a8a;
+    --accent:#b8860b; /* single restrained accent — marks the active lot only */
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    width:1920px;
+    height:1080px;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- LOT BANNER (current lot, prominent) ---------- */
+  .lot{
+    border-bottom:6px solid var(--accent);
+    padding:16px 40px 14px;
+    display:flex;
+    align-items:center;
+    gap:34px;
+    flex:0 0 auto;
+  }
+  .lot-flag{
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:3px;
+    color:var(--paper);
+    background:var(--accent);
+    padding:10px 18px;
+    border-radius:4px;
+    white-space:nowrap;
+  }
+  .lot-name{
+    font-size:70px;
+    font-weight:800;
+    letter-spacing:1px;
+    line-height:.95;
+  }
+  .lot-meta{
+    font-size:30px;
+    font-weight:600;
+    color:var(--grey-5);
+    letter-spacing:.5px;
+    display:flex;
+    gap:14px;
+    align-items:baseline;
+    margin-left:auto;
+  }
+  .lot-meta .chip{
+    border:2px solid var(--grey-3);
+    border-radius:4px;
+    padding:6px 14px;
+    color:var(--ink);
+    font-size:26px;
+  }
+  .lot-meta .chip strong{font-weight:800;}
+
+  /* ---------- PLAYER-DATA OVERLAY (factual history, glanceable) ---------- */
+  .lot-stats{
+    border:2px solid var(--grey-3);
+    border-left:4px solid var(--accent);
+    border-radius:4px;
+    background:var(--grey-1);
+    padding:7px 16px 8px;
+    display:flex;
+    align-items:center;
+    gap:18px;
+    align-self:center;
+  }
+  .lot-stats .hdr{
+    font-size:13px;
+    font-weight:800;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--grey-5);
+    line-height:1.15;
+    white-space:nowrap;
+  }
+  .lot-stats .stat{
+    text-align:center;
+    line-height:1;
+    white-space:nowrap;
+  }
+  .lot-stats .stat .v{
+    display:block;
+    font-size:28px;
+    font-weight:800;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:-.5px;
+  }
+  .lot-stats .stat.lead .v{color:var(--accent);}
+  .lot-stats .stat .k{
+    display:block;
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:var(--grey-4);
+    margin-top:4px;
+  }
+  .lot-stats .sep{
+    width:2px;
+    align-self:stretch;
+    background:var(--grey-3);
+  }
+
+  /* ---------- CLAUDE BRIEF BAND (AI news, backfilled draft morning) ---------- */
+  .brief{
+    flex:0 0 auto;
+    border-bottom:3px solid var(--line);
+    background:var(--grey-1);
+    padding:13px 40px 15px;
+    display:grid;
+    grid-template-columns:300px 1fr 290px;
+    column-gap:34px;
+    align-items:start;
+  }
+  /* left: source identity + recency */
+  .brief-id{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+  }
+  .brief-flag{
+    align-self:flex-start;
+    font-size:17px;
+    font-weight:800;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    color:var(--ink);
+    border:2px solid var(--ink);
+    border-radius:4px;
+    padding:5px 12px;
+  }
+  .brief-flag .dot{
+    color:var(--accent);
+    font-weight:900;
+  }
+  .brief-stamp{
+    font-size:15px;
+    font-weight:700;
+    letter-spacing:1px;
+    color:var(--grey-5);
+    line-height:1.35;
+  }
+  .brief-stamp strong{color:var(--ink);}
+  .brief-stamp .src{
+    display:block;
+    font-size:13px;
+    font-weight:700;
+    color:var(--grey-4);
+    text-transform:uppercase;
+    letter-spacing:1px;
+    margin-top:3px;
+  }
+
+  /* centre: verdict headline + categorised intel */
+  .brief-main{min-width:0;}
+  .brief-head{
+    font-size:27px;
+    font-weight:800;
+    letter-spacing:.2px;
+    line-height:1.12;
+    margin-bottom:9px;
+  }
+  .brief-head .lead{color:var(--accent);}
+  .intel{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    column-gap:22px;
+  }
+  .intel .col{min-width:0;}
+  .intel .k{
+    display:block;
+    font-size:13px;
+    font-weight:800;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--grey-5);
+    border-bottom:2px solid var(--grey-3);
+    padding-bottom:3px;
+    margin-bottom:5px;
+  }
+  .intel .v{
+    display:block;
+    font-size:17px;
+    font-weight:600;
+    line-height:1.28;
+    color:var(--ink);
+  }
+  .intel .v em{
+    font-style:normal;
+    font-weight:800;
+  }
+
+  /* right: signal chips (factual tags, not bid advice) */
+  .brief-signals{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    align-items:stretch;
+  }
+  .sig{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border:2px solid var(--grey-3);
+    background:var(--paper);
+    border-radius:4px;
+    padding:6px 12px;
+  }
+  .sig .sk{
+    font-size:13px;
+    font-weight:800;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--grey-5);
+  }
+  .sig .sv{
+    font-size:18px;
+    font-weight:800;
+    letter-spacing:.5px;
+  }
+  .sig.hot{border-color:var(--accent);}
+  .sig.hot .sv{color:var(--accent);}
+  .brief-disclaim{
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.5px;
+    color:var(--grey-4);
+    text-align:right;
+    line-height:1.3;
+    margin-top:1px;
+  }
+
+  /* ---------- BODY: leaderboard (main) + side rail ---------- */
+  .body{
+    flex:1 1 auto;
+    display:flex;
+    min-height:0;
+  }
+
+  /* ---------- LEADERBOARD ---------- */
+  .board{
+    flex:1 1 auto;
+    padding:12px 32px 14px 40px;
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+  }
+  .board h2{
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--grey-5);
+    margin-bottom:4px;
+  }
+  .board h2 .sub{
+    font-weight:600;
+    color:var(--grey-4);
+    letter-spacing:1px;
+    text-transform:none;
+  }
+
+  .row-head,.row{
+    display:grid;
+    grid-template-columns:56px 1.4fr 1.1fr 2.2fr 1.7fr;
+    align-items:center;
+    column-gap:20px;
+  }
+  .row-head{
+    font-size:19px;
+    font-weight:700;
+    letter-spacing:1px;
+    color:var(--grey-5);
+    text-transform:uppercase;
+    padding:5px 14px;
+    border-bottom:3px solid var(--line);
+  }
+  .row-head .num{text-align:right;}
+
+  .rows{flex:1 1 auto; display:flex; flex-direction:column; justify-content:flex-start;}
+
+  .row{
+    padding:7px 14px;
+    border-bottom:2px solid var(--grey-2);
+    min-height:0;
+  }
+  .row:nth-child(odd){background:var(--grey-1);}
+
+  /* rank chip */
+  .rank{
+    font-size:28px;
+    font-weight:800;
+    color:var(--grey-4);
+    text-align:center;
+  }
+  .row.top .rank{color:var(--ink);}
+
+  /* manager name */
+  .mgr{
+    font-size:38px;
+    font-weight:800;
+    letter-spacing:1px;
+  }
+  .mgr .tag{
+    display:block;
+    font-size:17px;
+    font-weight:700;
+    letter-spacing:2px;
+    color:var(--grey-5);
+    text-transform:uppercase;
+    margin-top:1px;
+  }
+
+  /* remaining */
+  .rem{
+    font-size:31px;
+    font-weight:600;
+    color:var(--ink);
+    text-align:right;
+    font-variant-numeric:tabular-nums;
+  }
+  .rem .lbl{
+    display:block;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:2px;
+    color:var(--grey-4);
+    text-transform:uppercase;
+    text-align:right;
+  }
+
+  /* slots G/D/M/F */
+  .slots{display:flex; gap:10px;}
+  .slot{
+    flex:1;
+    text-align:center;
+    border:2px solid var(--grey-3);
+    border-radius:4px;
+    padding:3px 0 4px;
+    background:var(--paper);
+  }
+  .slot .pos{
+    display:block;
+    font-size:14px;
+    font-weight:800;
+    letter-spacing:1px;
+    color:var(--grey-4);
+  }
+  .slot .cnt{
+    display:block;
+    font-size:24px;
+    font-weight:700;
+    line-height:1;
+    margin-top:2px;
+    font-variant-numeric:tabular-nums;
+  }
+  .slot.full{
+    background:var(--grey-3);
+    border-color:var(--grey-4);
+  }
+  .slot.full .cnt,.slot.full .pos{color:#000;}
+  .slot.lotpos{border-color:var(--ink); border-width:3px;}
+  .slot.lotpos.full{background:var(--accent); border-color:var(--accent);}
+  .slot.lotpos.full .pos,.slot.lotpos.full .cnt{color:#fff;}
+
+  /* max bid — dominant number */
+  .max{
+    text-align:right;
+    font-variant-numeric:tabular-nums;
+  }
+  .max .v{
+    font-size:56px;
+    font-weight:800;
+    line-height:.9;
+    letter-spacing:-1px;
+  }
+  .max .lbl{
+    display:block;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:2px;
+    color:var(--grey-4);
+    text-transform:uppercase;
+    margin-bottom:2px;
+  }
+
+  /* ---- blocked / full states: de-emphasised ---- */
+  .row.out{
+    background:repeating-linear-gradient(45deg,#fafafa,#fafafa 14px,#f0f0f0 14px,#f0f0f0 28px);
+    opacity:.78;
+  }
+  .row.out .mgr,.row.out .rem,.row.out .rank{color:var(--grey-5);}
+  .row.out .max .v{
+    font-size:46px;
+    color:var(--grey-4);
+    font-weight:800;
+  }
+  .state-badge{
+    display:inline-block;
+    font-size:17px;
+    font-weight:800;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    padding:3px 12px;
+    border-radius:4px;
+    margin-top:5px;
+  }
+  .badge-full{background:var(--grey-5); color:#fff;}
+  .badge-blocked{background:var(--paper); color:var(--grey-5); border:2px solid var(--grey-5);}
+  .max .why{
+    display:block;
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:1px;
+    color:var(--grey-5);
+    text-transform:uppercase;
+    margin-top:2px;
+  }
+
+  .divider-out{
+    border-top:3px dashed var(--grey-3);
+  }
+
+  /* ---------- SIDE RAIL: sold + pool (secondary) ---------- */
+  .rail{
+    flex:0 0 440px;
+    border-left:3px solid var(--line);
+    padding:14px 28px;
+    display:flex;
+    flex-direction:column;
+    background:var(--grey-1);
+  }
+  .rail section{margin-bottom:18px;}
+  .rail h3{
+    font-size:20px;
+    font-weight:800;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--grey-5);
+    border-bottom:2px solid var(--grey-3);
+    padding-bottom:7px;
+    margin-bottom:10px;
+  }
+  .sold li{
+    list-style:none;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    font-size:23px;
+    padding:7px 0;
+    border-bottom:1px solid var(--grey-3);
+  }
+  .sold .pl{font-weight:800; letter-spacing:.5px;}
+  .sold .to{color:var(--grey-5); font-weight:700; font-size:20px;}
+  .sold .pr{font-weight:800; font-variant-numeric:tabular-nums;}
+
+  .pool{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .pool .cell{
+    border:2px solid var(--grey-3);
+    background:var(--paper);
+    border-radius:4px;
+    padding:9px 12px 11px;
+    text-align:center;
+  }
+  .pool .cell.lotpos{border-color:var(--accent); border-width:3px;}
+  .pool .pos{font-size:18px; font-weight:800; letter-spacing:2px; color:var(--grey-5);}
+  .pool .n{display:block; font-size:38px; font-weight:800; line-height:1; margin-top:4px; font-variant-numeric:tabular-nums;}
+
+  .footnote{
+    margin-top:auto;
+    font-size:15px;
+    color:var(--grey-4);
+    letter-spacing:1px;
+    line-height:1.4;
+  }
+  .footnote strong{color:var(--grey-5);}
+</style>
+</head>
+<body>
+
+  <!-- ===== CURRENT LOT ===== -->
+  <header class="lot">
+    <span class="lot-flag">ON THE BLOCK</span>
+    <span class="lot-name">HAALAND</span>
+
+    <div class="lot-stats">
+      <span class="hdr">Last season<br>25/26</span>
+      <div class="stat lead"><span class="v">224</span><span class="k">pts · FWD #3</span></div>
+      <div class="sep"></div>
+      <div class="stat"><span class="v">33/38</span><span class="k">starts · 2,910′</span></div>
+      <div class="sep"></div>
+      <div class="stat"><span class="v">27</span><span class="k">goals</span></div>
+      <div class="stat"><span class="v">5</span><span class="k">assists</span></div>
+      <div class="sep"></div>
+      <div class="stat"><span class="v">41%</span><span class="k">FPL owned</span></div>
+    </div>
+
+    <div class="lot-meta">
+      <span class="chip"><strong>FWD</strong></span>
+      <span class="chip">MCI</span>
+      <span class="chip">Tier <strong>1</strong></span>
+      <span class="chip">FPL <strong>£14.0</strong></span>
+    </div>
+  </header>
+
+  <!-- ===== CLAUDE BRIEF (AI news, backfilled draft morning) ===== -->
+  <section class="brief">
+    <div class="brief-id">
+      <span class="brief-flag"><span class="dot">✦</span> CLAUDE BRIEF</span>
+      <span class="brief-stamp">
+        Backfilled <strong>Aug 2, 7:14am</strong><br>
+        <span class="src">Pre-season · last 7 days</span>
+      </span>
+    </div>
+
+    <div class="brief-main">
+      <p class="brief-head">
+        Nailed-on starter and penalties — <span class="lead">but a calf knock in pre-season and a new-look midfield behind him are the only flags worth a discount.</span>
+      </p>
+      <div class="intel">
+        <div class="col">
+          <span class="k">Fitness</span>
+          <span class="v">Minor <em>calf</em> tightness, eased back into friendlies. Expected fit for GW1.</span>
+        </div>
+        <div class="col">
+          <span class="k">Role</span>
+          <span class="v">Lone striker, <em>on penalties &amp; set-piece target</em>. Undisputed No.9.</span>
+        </div>
+        <div class="col">
+          <span class="k">Team news</span>
+          <span class="v">New creator signed; <em>De Bruyne gone</em> — assist supply less certain early.</span>
+        </div>
+        <div class="col">
+          <span class="k">Fixtures</span>
+          <span class="v">Opens vs promoted side — <em>3 of first 5 at home</em>. Soft start.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="brief-signals">
+      <div class="sig hot"><span class="sk">Form</span><span class="sv">RISING ↑</span></div>
+      <div class="sig"><span class="sk">Injury</span><span class="sv">MINOR</span></div>
+      <div class="sig"><span class="sk">Start odds</span><span class="sv">95%+</span></div>
+      <div class="brief-disclaim">AI-generated · factual brief, not bid advice · verify before relying</div>
+    </div>
+  </section>
+
+  <div class="body">
+
+    <!-- ===== BID-READINESS LEADERBOARD ===== -->
+    <main class="board">
+      <h2>Who can bid on this FWD <span class="sub">— ranked by max allowable bid</span></h2>
+
+      <div class="row-head">
+        <span></span>
+        <span>Manager</span>
+        <span class="num">Remaining</span>
+        <span>Slots&nbsp;&nbsp;G&nbsp;/&nbsp;D&nbsp;/&nbsp;M&nbsp;/&nbsp;F</span>
+        <span class="num">Max bid</span>
+      </div>
+
+      <div class="rows">
+
+        <!-- M5 -->
+        <div class="row top">
+          <div class="rank">1</div>
+          <div class="mgr">M5<span class="tag">11/15 filled</span></div>
+          <div class="rem">£1,210<span class="lbl">remaining</span></div>
+          <div class="slots">
+            <div class="slot"><span class="pos">G</span><span class="cnt">1</span></div>
+            <div class="slot"><span class="pos">D</span><span class="cnt">4</span></div>
+            <div class="slot"><span class="pos">M</span><span class="cnt">4</span></div>
+            <div class="slot lotpos"><span class="pos">F</span><span class="cnt">2</span></div>
+          </div>
+          <div class="max"><span class="lbl">max bid</span><span class="v">£1,207</span></div>
+        </div>
+
+        <!-- M2 -->
+        <div class="row">
+          <div class="rank">2</div>
+          <div class="mgr">M2<span class="tag">13/15 filled</span></div>
+          <div class="rem">£980<span class="lbl">remaining</span></div>
+          <div class="slots">
+            <div class="slot full"><span class="pos">G</span><span class="cnt">2</span></div>
+            <div class="slot full"><span class="pos">D</span><span class="cnt">5</span></div>
+            <div class="slot"><span class="pos">M</span><span class="cnt">4</span></div>
+            <div class="slot lotpos"><span class="pos">F</span><span class="cnt">2</span></div>
+          </div>
+          <div class="max"><span class="lbl">max bid</span><span class="v">£978</span></div>
+        </div>
+
+        <!-- M7 -->
+        <div class="row">
+          <div class="rank">3</div>
+          <div class="mgr">M7<span class="tag">12/15 filled</span></div>
+          <div class="rem">£730<span class="lbl">remaining</span></div>
+          <div class="slots">
+            <div class="slot"><span class="pos">G</span><span class="cnt">1</span></div>
+            <div class="slot full"><span class="pos">D</span><span class="cnt">5</span></div>
+            <div class="slot"><span class="pos">M</span><span class="cnt">4</span></div>
+            <div class="slot lotpos"><span class="pos">F</span><span class="cnt">2</span></div>
+          </div>
+          <div class="max"><span class="lbl">max bid</span><span class="v">£726</span></div>
+        </div>
+
+        <!-- M1 -->
+        <div class="row">
+          <div class="rank">4</div>
+          <div class="mgr">M1<span class="tag">10/15 filled</span></div>
+          <div class="rem">£455<span class="lbl">remaining</span></div>
+          <div class="slots">
+            <div class="slot"><span class="pos">G</span><span class="cnt">1</span></div>
+            <div class="slot"><span class="pos">D</span><span class="cnt">4</span></div>
+            <div class="slot"><span class="pos">M</span><span class="cnt">3</span></div>
+            <div class="slot lotpos"><span class="pos">F</span><span class="cnt">2</span></div>
+          </div>
+          <div class="max"><span class="lbl">max bid</span><span class="v">£452</span></div>
+        </div>
+
+        <!-- M4 -->
+        <div class="row">
+          <div class="rank">5</div>
+          <div class="mgr">M4<span class="tag">7/15 filled</span></div>
+          <div class="rem">£305<span class="lbl">remaining</span></div>
+          <div class="slots">
+            <div class="slot"><span class="pos">G</span><span class="cnt">1</span></div>
+            <div class="slot"><span class="pos">D</span><span class="cnt">3</span></div>
+            <div class="slot"><span class="pos">M</span><span class="cnt">2</span></div>
+            <div class="slot lotpos"><span class="pos">F</span><span class="cnt">1</span></div>
+          </div>
+          <div class="max"><span class="lbl">max bid</span><span class="v">£298</span></div>
+        </div>
+
+        <!-- ===== OUT OF PLAY ===== -->
+
+        <!-- M6 position-blocked -->
+        <div class="row out divider-out">
+          <div class="rank">—</div>
+          <div class="mgr">M6
+            <span class="state-badge badge-blocked">FWD full</span>
+          </div>
+          <div class="rem">£60<span class="lbl">remaining</span></div>
+          <div class="slots">
+            <div class="slot full"><span class="pos">G</span><span class="cnt">2</span></div>
+            <div class="slot full"><span class="pos">D</span><span class="cnt">5</span></div>
+            <div class="slot"><span class="pos">M</span><span class="cnt">3</span></div>
+            <div class="slot lotpos full"><span class="pos">F</span><span class="cnt">3</span></div>
+          </div>
+          <div class="max"><span class="lbl">max bid</span><span class="v">—</span><span class="why">No open FWD · MID slots left</span></div>
+        </div>
+
+        <!-- M3 squad full -->
+        <div class="row out">
+          <div class="rank">—</div>
+          <div class="mgr">M3
+            <span class="state-badge badge-full">Squad full</span>
+          </div>
+          <div class="rem">£12<span class="lbl">remaining</span></div>
+          <div class="slots">
+            <div class="slot full"><span class="pos">G</span><span class="cnt">2</span></div>
+            <div class="slot full"><span class="pos">D</span><span class="cnt">5</span></div>
+            <div class="slot full"><span class="pos">M</span><span class="cnt">5</span></div>
+            <div class="slot lotpos full"><span class="pos">F</span><span class="cnt">3</span></div>
+          </div>
+          <div class="max"><span class="lbl">max bid</span><span class="v">—</span><span class="why">15 / 15 complete</span></div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- ===== SECONDARY RAIL ===== -->
+    <aside class="rail">
+      <section>
+        <h3>Recently sold</h3>
+        <ul class="sold">
+          <li><span class="pl">ISAK <span class="to">→ M5</span></span><span class="pr">£800</span></li>
+          <li><span class="pl">SALAH <span class="to">→ M2</span></span><span class="pr">£1,000</span></li>
+          <li><span class="pl">PALMER <span class="to">→ M2</span></span><span class="pr">£525</span></li>
+          <li><span class="pl">GABRIEL <span class="to">→ M1</span></span><span class="pr">£90</span></li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>Remaining pool</h3>
+        <div class="pool">
+          <div class="cell"><span class="pos">GK</span><span class="n">18</span></div>
+          <div class="cell"><span class="pos">DEF</span><span class="n">92</span></div>
+          <div class="cell"><span class="pos">MID</span><span class="n">130</span></div>
+          <div class="cell lotpos"><span class="pos">FWD</span><span class="n">41</span></div>
+        </div>
+      </section>
+
+      <div class="footnote">
+        Max bid reserves <strong>£1</strong> per other open slot.<br>
+        Claude brief backfilled <strong>draft morning</strong> · board refreshes ~2s.
+      </div>
+    </aside>
+
+  </div>
+
+</body>
+</html>
