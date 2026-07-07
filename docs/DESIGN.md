@@ -1,126 +1,132 @@
 # Product Design - Auction v1
 
-> Status: DRAFT for review. Abbreviated design to lock requirements before build. Low-fi only - visual design comes at build time. Feeds `docs/PRD.md` acceptance criteria.
+> Status: APPROVED. Matches `docs/PRD.md`. Low-fi wireframes here are structural only.
 >
 > **Visual design is now locked** - colors, type, and surface rules live in [`docs/VISUAL-DESIGN.md`](VISUAL-DESIGN.md), with a live sample at [`docs/wireframes/style-sketch.html`](wireframes/style-sketch.html).
 
-## Surfaces (3, one responsive app, role by token)
+## Surfaces (5, one responsive app, writes by token)
 
-| Surface | Audience | Mode | Layout |
+| Surface | Route | Audience | Mode |
 |---|---|---|---|
-| **Projector board** | the room | read-only | big, glanceable from across a room |
-| **Commissioner panel** | one operator | read + write (token) | board + an entry/control strip |
-| **Manager phone** | each manager | read-only | compact; "my team" first, then the board |
+| **Board ("On the block")** | `/` | the TV, and anyone's phone/laptop | read-only |
+| **Reveal takeover** | (automatic on the board) | the room | read-only, fires on every sale |
+| **Squads** | `/squads` | the room | read-only, all 8 squads on one screen |
+| **Ledger** | `/ledger` | the room | read-only, every player / every price, search + sort + filter |
+| **Console** | `/console` | the auctioneer | read + write (token) - the ONLY writer |
 
-All three render the same `/api/state` (polled ~2s); the commissioner panel additionally `POST`s to `/api/draft`.
+A sixth, post-auction page - **Recap** at `/recap` (awards, spend charts, the permanent record) - sits outside the live loop. All five live surfaces render from the same polled `/api/state` (~2s). There are no logins: this is a **war room** - one open URL for the TV, laptops, and phones, showing only publicly derivable numbers (budgets, max bids, squads, pool, sale log). The console selects what the TV shows (block / reveal / squads / ledger / paused).
 
-## The auction-night flow
+## The auction-night flow (two phases)
 
 ```
-  search/select player ──► PLAYER ON THE BLOCK  (broadcast to all surfaces)
+PHASE 1 (every player offered once, price-desc, shuffled within tier)
+  next lot from queue ──► PLAYER ON THE BLOCK  (broadcast to all surfaces)
             │                       │
             │                room bids verbally
             │                       │
-            │             commissioner enters winner + £price
-            │                       ▼
-            │              POST /api/draft ──► validate ──► record sale
-            │                       │                          │
-            └──────────────◄────────┴──── board updates everywhere (~2s)
-                  (or: PASS/CLEAR lot if no bids)        (or: UNDO last sale)
-   repeat until every squad is full (15)
+            │        ┌── nobody bids ──► mark NO BID, stays available
+            │        │
+            │     auctioneer enters winner + $price
+            │        │
+            │        ▼
+            │   POST /api/draft ──► validate ──► record sale ──► REVEAL takeover
+            │        │                                (price vs sealed value + verdict)
+            └────────┴──── board updates everywhere (~2s)
+  repeat until every player has been offered once
+            │
+  auctioneer: "End phase one"  (explicit confirm step)
+            ▼
+PHASE 2 (nomination rotation)
+  managers nominate any unsold player (including no-bids) in a FIXED
+  ROTATION, skipping managers whose squads are full, until all squads
+  are 15/15. Same bid/validate/record/reveal loop per nominated lot.
 ```
 
-- **No nomination phase.** Lot order is the pool sorted by **FPL price, most expensive first** (the long-standing Como convention), with an optional **randomise-within-tier** shuffle. The commissioner advances through the queue; search/jump to skip.
-- **Pause** is a first-class control: the commissioner can pause for trades, discussion, or a break, and every surface shows a clear PAUSED state.
-- The commissioner is the **single writer**, so there is no bid contention to resolve.
-- **Player-data overlay (easy/factual only):** the on-the-block player shows readily-available FPL history (club, position, price, last-season points, last-season starts/minutes). No AI start-prediction; pre-auction research stays with each bidder.
+- **Phase 1 has no nomination** - lot order is FPL price descending, shuffled within tier. The console can see ~5 lots ahead; the room learns the next name only when the current lot closes. (An earlier draft of this doc said "no nomination phase" full stop - superseded: phase 2 IS nominated, in fixed rotation.)
+- **Pause** is a first-class control: the auctioneer can pause for trades, discussion, or a break, and every surface shows a clear PAUSED state.
+- **Trades are v1**: during a pause the auctioneer enters a two-sided trade (players and/or cash). Salaries travel with players; cash settles differences; guardrails enforce no negative budgets, quotas respected, squads <= 15. The board announces recorded trades.
+- The auctioneer is the **single writer**, so there is no bid contention to resolve.
+- **Player overlay on the block:** club-themed banner, official photo, last-season stats picked by role, overall + positional points rank, prior-season Como owner line (hidden if data absent), morning news brief, and a sealed-value chip (`CLAUDE VALUE - SEALED UNTIL THE HAMMER`).
 
 ## The max-bid rule (the one bit of real logic)
 
-A manager's **max allowable bid on the current lot** is position-aware and reserves £1 for each of their other empty slots:
+A manager's **max legal bid on the current lot** is position-aware and reserves the **minimum opening bid** (the lowest tier's open, $5 by default, config-driven - NOT $1) for each of their other open slots:
 
 ```
-openSlotThisPosition = squad[pos] - filled[m][pos]          // must be > 0 to bid at all
-emptySlotsElsewhere  = (squadSize - slotsFilled[m]) - 1      // reserve £1 each
+openSlotThisPosition = squad[pos] - filled[m][pos]        // must be > 0 to bid at all
+otherOpenSlots       = (squadSize - slotsFilled[m]) - 1   // reserve minOpeningBid each
 maxBid(m)            = openSlotThisPosition > 0
-                         ? remaining[m] - max(0, emptySlotsElsewhere) * bidFloor
-                         : -                                  // blocked: no slot for this position
+                         ? remaining[m] - max(0, otherOpenSlots) * minOpeningBid
+                         : blocked                        // no slot for this position
 ```
 
-So a manager with money but no empty GK slot **cannot** bid on a GK (shown as "-"). When a manager has one slot left, their max = full remaining. This is computed server-side in `/api/state` per manager for the current lot, and shown on every surface.
+So a manager with money but no empty GK slot **cannot** bid on a GK. When a manager has one slot left, their max = full remaining. This guarantees nobody can strand themselves unable to fill their squad. Computed server-side in `/api/state` for all 8 managers, shown on every surface, and **enforced at sale entry**.
 
 ## Validation (server, one transaction) - rejects a sale unless all hold
 
-1. Player exists and is **not already sold** (exclusive ownership).
-2. Winner has an **open slot for that position**.
-3. `price >= bidFloor` and `price <= maxBid(winner)` (the reserve rule above).
-4. Winner has a free squad slot overall.
+1. Player is the current lot (or the phase-2 nominated player) and is **not already sold** (exclusive ownership, DB constraint).
+2. Winner has an **open slot for that position** and a free squad slot overall.
+3. `price >= tier opening bid` and `price <= maxBid(winner)`.
+4. Rejections explain themselves in plain words on the console (e.g. "Over M3's max bid of $1,190 - they must keep $5 per open slot").
 
-## States & edge cases
+## States and edge cases
 
-- **Drafted players** drop out of the search/pool; can't be re-nominated.
-- **Blocked winners**: a manager who can't legally win the current lot (no position slot, or maxBid < floor) is greyed in the winner picker.
-- **Pass / clear lot**: a nominated player with no bids is cleared without a sale (no pick row written).
-- **Undo**: reverses the last sale, restoring budget + slot; the player returns to the pool.
-- **Squad full**: a manager at 15 is excluded from the winner picker and shown "complete".
-- **Late join / refresh**: any surface catches up on its next poll; no per-client state.
+- **Sold players** drop out of the pool; can't be re-offered (unless their sale is voided).
+- **NO BID (phase 1):** cleared without a sale, marked in the lot history, remains nominatable in phase 2.
+- **Blocked winners:** a manager who can't legally win the current lot is greyed in the console's winner picker, with the reason ("FWD full", "15/15").
+- **Undo:** reverses the last sale, restoring budget + slot; the player returns to the pool. Audited.
+- **Edit / void any sale:** from the ledger, with a reason; re-validated in the new state; audited with before/after.
+- **Squad full:** excluded from the winner picker and skipped in the phase-2 rotation.
+- **Late join / refresh / TV tab closed:** any surface catches up on its next poll; no per-client state.
 
 ## Low-fi wireframes
 
-### Projector board
+(Structural only; the real layouts are the approved visual designs. Numbers below assume the config defaults: $3,000 x 8 managers.)
+
+### Board (TV)
 ```
-┌──────────────────────────────────────────────────────────────┐
-│  ON THE BLOCK:  HAALAND   FWD · MCI · Tier 1 · £14.0          │
-│──────────────────────────────────────────────────────────────│
-│ Manager   Rem    Slots(G/D/M/F)   MaxBid │ Manager   Rem ...  │
-│ M1       £455    1/4/3/2          £452    │ M5      £1,210 ... │
-│ M2       £980    2/5/4/2          £977    │ M6        £ 60 ... │
-│ M3       £ 12    2/5/5/3  FULL    -       │ M7       £730  ... │
-│ M4       £305    1/3/2/1          £302    │                    │
-│──────────────────────────────────────────────────────────────│
-│ Recently sold:  ISAK→M5 £800 · SALAH→M2 £1,000 · ...          │
-│ Remaining pool:  GK 18 · DEF 92 · MID 130 · FWD 41           │
-└──────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│ ON THE BLOCK · LOT 14   HAALAND   FWD · MCI · TIER 1 · OPENS $50    │
+│────────────────────────────────────────────────────────────────────│
+│ [photo]  '25 pts + role stats     │ Recently sold:                  │
+│ [club]   '25 Como owner line      │  ISAK → M5  $800                │
+│          Morning brief (3 pts)    │ Pool by role x tier (bars)      │
+│          🔒 CLAUDE VALUE - SEALED │ ⚠ scarcity alert                │
+│────────────────────────────────────────────────────────────────────│
+│ M1 $455 max $415 │ M2 $980 max $945 │ M3 $12 FULL │ M4 $305 ...     │
+│ M5 $1,210 ...    │ M6 $60 ...       │ M7 $730 ... │ M8 $2,140 ...   │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
-### Commissioner panel
+### Reveal takeover (fires automatically on every sale)
 ```
-┌─────────────────────────────────────────────┐
-│ [ search player…  ]  filter: [POS▾][CLUB▾]   │
-│  > Haaland  FWD MCI £14.0   [ SET ON BLOCK ] │
-│  > Watkins  FWD AVL £8.5    [ SET ON BLOCK ] │
-│─────────────────────────────────────────────│
-│ ON THE BLOCK:  HAALAND  FWD · MCI            │
-│ Winner: [ M1 ▾ ]   Price: [  ___  ]          │
-│         (M3 FULL, M6 £60<floor greyed)       │
-│        [ RECORD SALE ]   [ PASS/CLEAR ]      │
-│─────────────────────────────────────────────│
-│ Last: ISAK→M5 £800   [ UNDO ]                │
-└─────────────────────────────────────────────┘
+┌────────────────────────────────────────────────┐
+│            HAALAND  →  M1                       │
+│   PAID $780        │      CLAUDE VALUE $540     │
+│        OVERPAY · +$240 - 44% OVER               │
+└────────────────────────────────────────────────┘
 ```
 
-### Manager phone (read-only)
+### Console (auctioneer)
 ```
-┌───────────────────────────┐
-│ MY TEAM - M5              │
-│ Rem £1,210 · 11/15 slots  │
-│ Max bid (Haaland): £1,207 │
-│ GK ✓✓  DEF ✓✓✓✓✓          │
-│ MID ✓✓✓·· FWD ✓··         │
-│ My squad: Isak £800, …    │
-│───────────────────────────│
-│ ON THE BLOCK: Haaland     │
-│ Board: M1 £455 · M2 £980… │
-└───────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│ LOT 14 · HAALAND · T1 · FWD · MCI · opens $50     │
+│ Winner: [M1 $415][M2 $945][M3 FULL][M4 ...] x8    │
+│ Price: [ ___ ]  verdict: ✗ over M1's max ($415)   │
+│ [ 🔨 RECORD SALE ] [ NO BID ] [ ⇄ TRADE ] [ ↩ ]   │
+│──────────────────────────────────────────────────│
+│ Up next (~5, hidden from room) │ Night progress   │
+│ Phase: [ ⏹ End phase one ]  TV: [block▾]  [PAUSE] │
+└──────────────────────────────────────────────────┘
 ```
 
 ## What this confirms for the build
 
-- `/api/state` returns, per manager: `remaining`, `slotsFilled`, `byPosition`, and a **`maxBidCurrentLot`** computed against the on-block player.
-- A **current-lot** concept exists in state (set by the commissioner). Simplest: a single-row `lots`/`current_lot` the panel writes; or hold it in a lightweight `app_state` row. (Decide in build.)
-- Three responsive layouts off one component tree; commissioner actions gated by `COMMISSIONER_TOKEN`.
+- `/api/state` returns, per manager: `remaining`, `slotsFilled`, `byPosition`, and a **`maxBid`** computed against the on-block player - all derived at read time from sales + trades + config, never stored.
+- A singleton `app_state` row holds phase, pause, current lot, TV view, nomination turn, lot queue, and a version counter that clients poll cheaply.
+- Five surfaces off one component tree; console actions gated by `COMMISSIONER_TOKEN`.
+- Sealed valuations are sealed **server-side**: never in a payload for an unsold player.
 
 ## Still open (build-time, not blocking)
 
-- Where "on the block" lives (DB row vs in-memory broadcast) - pick during build.
-- Visual design / branding - frontend-design skill at build.
+- Hosting for the night (Vercel URL vs self-hosted) - same code either way.

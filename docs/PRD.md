@@ -1,60 +1,98 @@
-# EPL Como Fantasy 26/27 — Product Requirements
+# EPL Como Fantasy 26/27 - Product Requirements
 
-> Status: DRAFT for review. Public repo — shared league tooling only, nothing private to any manager.
-> **v1 target: the live auction on Aug 2, 2026 (in person).** Season scoring is deferred (see Future).
+> Status: APPROVED. Public repo - shared league tooling only, nothing private to any manager.
+> **v1 target: the live auction on Aug 2, 2026 (in person).** Season scoring stays on the official FPL Draft site (see Non-goals).
 
 ## Problem
 
-The Como league runs a live auction draft each season, historically tracked in an ad-hoc Google Sheet. There's no purpose-built tool to run the live auction with budget/roster validation and a shared in-room view. We're building that, config-driven so it reruns every season and sport. The season-long points tracker is a later phase, not part of the Aug 2 v1.
+The Como league runs a live auction draft each season, historically tracked in an ad-hoc spreadsheet (one row typed per sale, formula side-tables for budgets). There is no purpose-built tool to run the live auction with budget/roster validation, a shared in-room view, and a bit of theatre. We are building that, config-driven so it reruns every season and sport. After the auction, managers enter squads into the official FPL Draft site (draft.premierleague.com), which handles all scoring and the season itself.
 
 ## Users
 
-- **Commissioner** — one operator who runs the draft from a control panel: nominates the lot, enters the winning manager + sold price. Token-gated.
-- **Managers** — in the room. Watch the live board (the **projector/big-screen** view and/or their own phone): current lot, every manager's spend / remaining / slots filled.
+- **Auctioneer / commissioner** - one neutral operator who runs the night from a token-gated console: advances lots, records `winner + sold price`, enters trades, corrects mistakes.
+- **Managers** - 8, in the room. Bid by voice. Watch the shared board on the TV and/or their own phones/laptops.
 
-## Scope — v1 (auction only, in person, Aug 2)
+## The war-room model
 
-### Live draft board
-- Commissioner nominates a player and records `winner + sold price`.
-- App validates each sale against league config: budget remaining, position-slot availability, exclusive ownership (no double-owning a player).
-- **Projector view** — a read-only big-screen board for the room, plus the commissioner's entry panel (the admin / big-screen role split). All views refresh by polling (~2s). Bidding stays verbal in the room; the app is the system of record, not the auctioneer.
-- **Undo** — commissioner can reverse a mis-entered sale.
-- Player pool sourced from the FPL API (`bootstrap-static`, 4 element types).
+No logins, no private data, no watchlists. One open web page serves the TV, laptops, and phones. It shows only publicly derivable information: every budget, every live max bid, every squad, the remaining pool, the sale log. The TV is literally a browser tab on the board URL. All screens poll shared state (~2s); the console is the only writer.
 
-## Future (out of scope for the Aug 2 v1)
+## Scope - v1 (auction night, Aug 2)
 
-- **Season tracker** — sum each owned player's official FPL gameweek points per manager → standings. Rosters carry forward from the draft. Scoring model (all-15 vs weekly XI + captain) to be settled when this phase starts. Schema reserves `gw_scores`.
-- **Rebid rounds** — the league runs 3–4 mid-season blind-bid rounds; schema reserves `picks.round` and `rebidRounds` config.
+### Two-phase auction
+- **Phase 1:** every player is offered exactly once, in FPL price order descending, shuffled within tier. If nobody bids, the player is marked NO BID and stays available - no ad-hoc requeue. The room learns the next name only when the current lot closes.
+- **Phase 2:** triggered manually by the auctioneer once all players have been offered. Managers **nominate** players (anyone unsold, including no-bids) in a **fixed rotation**, skipping managers with full squads, until every squad reaches 15/15.
+
+### Bidding and validation
+- **Commissioner-entry bidding (decided).** Bidding is verbal in the room; the auctioneer records outcomes. No bid timers, no in-app bidding, no per-manager auth.
+- Every sale is validated server-side: exclusive ownership (no double-owning), open position slot, price at or above the tier's opening bid, price at or below the manager's max bid.
+- **Max bid rule:** a manager's max legal bid = `remaining budget - (minimum opening bid x number of their OTHER open slots)`, where the minimum opening bid is the lowest tier's open ($5 by default, config-driven). This guarantees nobody can strand themselves unable to fill their squad. Computed live for all 8 managers and displayed everywhere.
+
+### Tiers and opening bids
+Four tiers by FPL price band. Defaults (all editable in league config - bands, opens, and increments are never hardcoded):
+
+| Tier | FPL price band | Opening bid |
+|---|---|---|
+| T1 | >= 12.0 | $50 |
+| T2 | >= 9.0 | $25 |
+| T3 | >= 7.0 | $10 |
+| T4 | the rest | $5 |
+
+### Corrections
+- **Undo last sale** on the console.
+- **Edit or void ANY past sale** from the ledger. Every change writes a visible audit trail.
+
+### In-auction trades (v1 must-have)
+- Entered by the auctioneer during a pause: players and/or cash between two managers.
+- **Salaries travel with players** - trade a $1,000 player away and $1,000 comes off your spend and onto theirs; cash settles differences.
+- Guardrails: no negative budgets, position quotas respected, squads stay at or under 15. Both budgets and max bids recalculate instantly; the board announces the trade.
+
+### AI features
+- **Sealed valuations:** a fair-price valuation per player, generated by Claude on draft morning, calibrated to the league economy. Hidden from everyone (including the auctioneer) until the hammer, then auto-revealed on the board beside the price paid with an OVERPAY / FAIR / STEAL verdict. Sealing is server-side: values never appear in any API payload for an unsold player.
+- **Morning news briefs:** short automated news briefs for top-tier players on draft morning; lower tiers briefed on demand when they hit the block.
+- **Prior-season owner line:** the board shows who owned the on-block player last season and for how much (from imported prior-season rosters); the line hides if the data is absent.
+- If briefs or valuations are missing, those panels hide and the auction still runs - AI features must never block the night.
+
+### Post-auction
+- Recap/awards page (biggest overpay, steal of the night, fastest hammer), per-manager FPL Draft entry checklist, permanent archive of the ledger.
 
 ## Non-goals (v1)
 
-- **No contested real-time bidding** in software. Commissioner enters results; no bid timers, locks, or auto-increment.
-- **No season scoring** in v1 (deferred — see Future).
-- **No private projections / valuations.** Any manager's edge model is out of scope for this shared repo.
-- **No auth beyond the commissioner token.** The board view is open to anyone with the link.
+- **No contested real-time bidding** in software. The auctioneer enters results; no bid timers, locks, or auto-increment.
+- **No season scoring, ever.** The official FPL Draft site runs the season.
+- **No logins or per-manager auth.** Reads are open to anyone with the link; writes are gated by the commissioner token.
+- **No private edge models.** The sealed valuation is a shared league feature; any manager's own research stays their own.
+
+## Future (out of scope for Aug 2)
+
+- **v2 - in-season rebid rounds** (retention, cash injections, borrowing rules; parameters to be agreed with the group).
+- **v3 - historical archive import** of past seasons.
 
 ## Format rules (config-driven)
 
-Seeded from 25/26 actuals; all live in `league.config.json`:
+All live in `league.config.json` (public placeholders) merged at runtime with gitignored `league.config.local.json` (real roster):
 
 | Rule | Default | Notes |
 |---|---|---|
-| Managers | 7 | count derives from the array length |
-| Budget | $2000 each | |
+| Managers | 8 | count derives from the array length |
+| Budget | $3,000 each | |
 | Squad | 2 GK / 5 DEF / 5 MID / 3 FWD (15) | |
-| Ownership | exclusive (`multipick: false`) | one manager per player |
-| Bid floor | $1 | no fixed increment |
-| Scoring | FPL points (`scoringSource: "fpl"`) | reserved for the deferred tracker; unused in v1 |
+| Ownership | exclusive | one manager per player, DB-enforced |
+| Tiers / opens | table above | bands, opens, increments all editable |
+| Min opening bid | $5 (lowest tier's open) | drives the max-bid reserve |
+| Scoring | none in-app | FPL Draft site handles the season |
 
 ## Acceptance criteria (v1)
 
-- [ ] `npm run db:setup && npm run ingest` produces a populated player pool (GK/DEF/MID/FWD only) and seeded managers against a fresh Postgres.
-- [ ] Commissioner can record a sale; an invalid sale (over budget, no slot, already owned, below floor) is rejected with a clear error.
-- [ ] Two browsers (commissioner + projector view): a sale entered on the panel appears on the board within ~2s.
-- [ ] Budget / slot / exclusivity invariants hold after every sale; concurrent sales can't oversell (live race test, not just unit asserts).
-- [ ] Undo reverses a sale and restores budget + slot.
-- [ ] Config change (e.g. 8 managers, different squad shape) is honoured with no code change.
-- [ ] **Port walk:** the Vercel deploy path in `docs/PORTING.md` completes with no code change (proves the portability claim, not just asserts it).
+- [ ] `npm run db:setup && npm run ingest` produces a populated, tiered player pool (GK/DEF/MID/FWD only) and seeded managers against a fresh Postgres.
+- [ ] Auctioneer can record a sale; an invalid sale (over max bid, below tier open, no position slot, already owned, squad full) is rejected server-side with a clear reason.
+- [ ] Two browsers (console + board): a sale entered on the console appears on the board within ~2s, and the reveal takeover fires with the sealed value and verdict.
+- [ ] Budget / slot / exclusivity invariants hold after every sale; concurrent sales cannot oversell (live race test, not just unit asserts).
+- [ ] Undo reverses a sale; edit/void of any past sale re-validates and writes an audit row.
+- [ ] A trade moves players, salaries, and cash correctly; both managers' budgets and max bids recalculate; illegal trades are rejected.
+- [ ] Phase 1 to phase 2 transition works: no-bid players remain nominatable; nomination rotation skips full squads; the night ends with all squads 15/15.
+- [ ] Sealed valuations never appear in any API response for an unsold player (verified by inspecting payloads, not just the UI).
+- [ ] Config change (different budget, tiers, squad shape, manager count) is honoured with no code change.
+- [ ] **Port walk:** the Vercel deploy path in `docs/PORTING.md` completes with no code change.
 - [ ] **Browser smoke test:** a human opens the deployed URL and confirms the board renders and updates. (Server 200s are not sufficient.)
 
 ## Deployment

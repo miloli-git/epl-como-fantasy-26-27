@@ -1,48 +1,49 @@
-# CLAUDE.md — agent context
+# CLAUDE.md - agent context
 
 Context for any AI coding agent (Claude Code / Cursor) working this repo.
 
 ## What this is
 
-Config-driven **live auction-draft** tool for a private fantasy league. **v1 target: the auction, in person, Aug 2 2026.** Season scoring + rebids are deferred (see `docs/PRD.md` Future). **Public repo** at `github.com/miloli-git/epl-como-fantasy-26-27` — shared tooling only, no real names, no secrets, no private valuation models. Read `docs/PRD.md`, `docs/DATA-MODEL.md`, `docs/HANDOFF.md` before changing anything.
+Config-driven **live auction-draft** tool for a private fantasy league. **v1 target: the auction, in person, Aug 2 2026.** Season scoring never lives here (the official FPL Draft site runs the season). **Public repo** at `github.com/miloli-git/epl-como-fantasy-26-27` - shared tooling only, no real names, no secrets, no private valuation content. Read `docs/PRD.md`, `docs/DESIGN.md`, `docs/DATA-MODEL.md`, `docs/HANDOFF.md` before changing anything.
 
-## Current state + where to start (2026-07-07)
+## Current state + where to start (2026-07-08)
 
-- **No app runtime exists yet** (`app/` is not built). The repo is docs + scaffold (schema, config, ingest/setup scripts).
-- **The work queue is the GitHub issues.** Read [#9 (v1 build plan, tracking)](https://github.com/miloli-git/epl-como-fantasy-26-27/issues/9) first; it sequences all work into sprints. Do not invent your own order.
-- **Proceed in this order:** spec fixes in the docs first (#1 maxBid validation, #3 lot/pause/app_state contract, #6 undo contract, #7 doc drift), then the config loader (#2), then the Sprint 1 walking skeleton per #9. #4 (sale locking) and #5 (ingest guard + position snapshot) land with the endpoints/scripts they affect, not before.
-- **Where docs conflict, `docs/DESIGN.md` is correct** (its max-bid rule is the confirmed league rule; see #1). Update the other docs to match it, not the reverse.
+- **Decisions are made.** The league owners have locked scope: $3,000 x 8 managers, four config-driven tiers, two-phase auction with phase-2 nomination rotation, commissioner-entry bidding, in-auction trades in v1, edit/void any sale with audit, sealed draft-morning valuations revealed at the hammer, war-room model with ~2s polling. `docs/DECISIONS-TO-CONFIRM.md` is the decision table; `docs/PRD.md` and `docs/DESIGN.md` are the requirements of record.
+- **The build is underway** per the plan in [issue #9](https://github.com/miloli-git/epl-como-fantasy-26-27/issues/9). Follow its sprint order; do not invent your own.
+- **Where docs conflict, `docs/DESIGN.md` and `docs/PRD.md` are correct** (the max-bid rule reserves the minimum opening bid per open slot, config-driven).
+- Visual design direction is being finalised by the owners - see `docs/VISUAL-DESIGN.md` and `docs/wireframes/` for the current candidate.
 - Run the Vercel port walk (`docs/PORTING.md`) at the END of Sprint 1, not at the end of the project.
 
 ## Human confirmation gates
 
-These are decisions for the human driving, not the agent. Stop and ask; never assume, guess, or build past them:
+Decisions for the human driving, not the agent. Stop and ask; never assume, guess, or build past them:
 
-1. **Starting the app build at all.** No app scaffolding without an explicit go. Spec/doc fixes (#1, #3, #6, #7) are fine to do when asked; `app/` is not.
-2. **Bidding model (#8).** Everything here assumes A (commissioner enters winner + price). If a request implies login bidding, bid timers, or realtime infra, stop and confirm: that decision voids the current plan.
-3. **League facts:** the real roster (names go ONLY in gitignored `league.config.local.json`), pool-freeze date, commissioner identity, draft-night hosting. Never guess these and never commit them.
-4. **Net-new scope:** in-auction trades, formation/pitch view, any AI/prediction overlay. All confirmed out of v1; confirm before touching.
-5. **Anything the scrub gate flags** (see Hard rules). When in doubt about whether content is private, it is; ask.
+1. **League facts:** the real roster (names go ONLY in gitignored `league.config.local.json`), pool-freeze date, auctioneer identity, draft-night hosting. Never guess these and never commit them.
+2. **Anything the scrub gate flags** (see Hard rules). When in doubt about whether content is private, it is; ask.
 
 ## Stack
 
-- Next.js (App Router, TypeScript), Postgres via `postgres` (postgres.js), live updates by polling `/api/state`.
+- Next.js (App Router, TypeScript), Postgres via `postgres` (postgres.js), live updates by polling `/api/state` (~2s).
 - One `DATABASE_URL`. Runs self-hosted (Docker, `output: standalone`) and on Vercel from the same code.
+- Claude API for the draft-morning briefs + valuations job only; the auction must run fine without it.
 
 ## Hard rules
 
-- **Exclusive ownership** is a DB constraint (`picks.player_id` unique). Don't bypass it.
-- **No hardcoded league params.** Read from `league.config.json` (real roster overrides via gitignored `league.config.local.json`). Manager count and squad size are always derived from config.
-- **Spend/remaining/slots are derived** from `picks` + config at read time. Never store them.
-- **Commissioner-gated writes.** `POST/DELETE /api/draft` require `COMMISSIONER_TOKEN`. Reads are open.
-- **No real names or secrets in commits.** `.env*` and `league.config.local.json` are gitignored — keep it that way.
-- **Before any public push, run the scrub gate:** `git diff --staged` for real manager names / tokens / connection strings; confirm `.env*` and `league.config.local.json` are untracked; confirm no private valuation/projection content. No push if any hit.
+- **Exclusive ownership** is a DB constraint (`sales.player_id` unique). Don't bypass it.
+- **No hardcoded league params.** Read from `league.config.json` (real roster overrides via gitignored `league.config.local.json`, deep-merged at runtime). Manager count, budget, squad shape, tier bands/opens are always derived from config.
+- **Spend/remaining/slots/max-bids are derived** from sales + trades + config at read time. Never store them.
+- **Sale legality is enforced server-side** (max bid, tier open, position quota, squad size). Client greying is UX, not defence.
+- **Sealed valuations never appear in any payload for an unsold player.** Sealing is server-side, not CSS.
+- **Every mutation writes an audit row** (sale create/edit/void, trade, phase change).
+- **Commissioner-gated writes.** All write routes require `COMMISSIONER_TOKEN`. Reads are open.
+- **No real names or secrets in commits.** `.env*` and `league.config.local.json` are gitignored - keep it that way.
+- **Before any public push, run the scrub gate:** `git diff --staged` for real manager names / tokens / connection strings; confirm `.env*` and `league.config.local.json` are untracked; confirm no sealed values or private valuation methodology beyond what the group agreed to publish. No push if any hit.
 - Portability is a requirement: no WebSocket server, no local SQLite, no custom Node server. If a change breaks the Vercel port, it's wrong (see `docs/HANDOFF.md`).
 
-## Build order (when build is approved)
+## Build order
 
-Sprint sequence lives in issue #9. In short: API routes (`state`, `lot`, `draft` incl. undo, `players`) → board UI (poll) → projector/big-screen view + commissioner panel → manager phone view. `/api/draft` (the no-oversell transaction, per issues #1 and #4) is correctness-critical: build it with an adversarial review pass. Deferred: season-score ingest + standings, rebid rounds.
+Sprint sequence lives in issue #9. `/api/draft` (the no-oversell transaction) is correctness-critical: build it with an adversarial review pass (try to break your own transaction with concurrent requests) before it counts as done. Deferred to later versions: rebid rounds, historical archive import.
 
 ## Verify
 
-After any change: `npm run db:setup && npm run ingest` against a scratch DB, then open the board in a browser and confirm a recorded sale propagates to a second tab. Server 200s alone don't count.
+After any change: `npm run db:setup && npm run ingest` against a scratch DB, then open the board in a browser and confirm a recorded sale propagates to a second tab (and fires the reveal). Server 200s alone don't count.

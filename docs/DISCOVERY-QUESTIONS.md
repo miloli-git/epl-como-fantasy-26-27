@@ -1,5 +1,7 @@
 # Pre-Wednesday Discovery — decisions to lock
 
+> **HISTORICAL - kept for the record only.** Every question below has since been decided; the decisions live in `docs/DECISIONS-TO-CONFIRM.md` (the closed decision table), and the requirements of record are `docs/PRD.md` / `docs/DESIGN.md` / `docs/DATA-MODEL.md`. Do not treat anything below as current.
+
 > The "list of qs" to work through before the Wed session, so the meeting is for deciding, not discovering. Built from Builder's auction notes + the commissioner thread + the design so far. **CONFIRMED** = agreed, ratify with the group. **OPEN** = decide. Each open item has options + a lean.
 >
 > v1 is the **auction only**. The season runs on the official Draft FPL site (all agreed). Anything season-side (scoring, waivers, keepers, FAAB) is captured at the bottom for completeness but is out of the build.
