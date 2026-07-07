@@ -55,6 +55,8 @@ export interface SquadEntry {
 }
 
 export interface ManagerState {
+  /** DB manager id - what /api/draft expects as managerId. */
+  id: number;
   slot: number;
   short: string;
   spent: number;
