@@ -12,3 +12,6 @@ tsconfig.tsbuildinfo
 
 # real roster (public repo): keep names out of git
 league.config.local.json
+
+# cached player photos + club badges (binaries, rebuilt via npm run assets)
+public/assets/

@@ -10,7 +10,9 @@
     "start": "next start",
     "lint": "next lint",
     "db:setup": "node scripts/db-setup.mjs",
-    "ingest": "node scripts/ingest-fpl.mjs"
+    "ingest": "node scripts/ingest-fpl.mjs",
+    "ingest:stats": "node scripts/ingest-fpl.mjs --stats-only",
+    "assets": "node scripts/cache-assets.mjs"
   },
   "dependencies": {
     "next": "^15.1.0",
