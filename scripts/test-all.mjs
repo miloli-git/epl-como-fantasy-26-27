@@ -64,6 +64,7 @@ try {
     ["corrections", ["scripts/test-corrections.mjs"]],
     ["trade", ["scripts/test-trade.mjs"]],
     ["lot", ["scripts/test-lot.mjs"]],
+    ["full night", ["scripts/test-full-night.mjs"]],
   ];
   const results = [];
   for (const [label, args] of suites) {
