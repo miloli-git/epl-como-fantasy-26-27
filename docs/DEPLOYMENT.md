@@ -70,6 +70,17 @@ Prerequisite code change: the config loader must read `LEAGUE_CONFIG_LOCAL` (see
 
 Ongoing until the freeze: re-run `npm run ingest:stats` from the laptop as needed for price/news drift; **pool freeze Jul 30-31** per the locked decision, after which no ingest runs until after the auction.
 
+## Pre-flight asset cache (at the freeze)
+
+Through July the board pulls player photos and club crests straight from the Premier League CDN (nothing stored, always current). For auction night the board must run off local copies so it does not depend on venue wifi or a third-party CDN - this is the second half of the hybrid image strategy the owners agreed on 9 Jul. The caching pass is a pre-flight step, run once the pool is frozen (Jul 30-31):
+
+1. With `.env` pointing at the production Neon `DATABASE_URL`, and after the final `npm run ingest`, run `npm run assets -- --gentle` from the machine that will serve on the night (and again on the fallback laptop). This downloads every player photo (two sizes) and all 20 club crests into `public/assets/` - about 1,700 files.
+2. `--gentle` paces the run to stay under the CDN rate limit. This matters: the CDN (S3 behind CloudFront) blocks an IP that bursts too fast and then returns "403 Access Denied" for every request, including photos that exist, for a cool-off period of tens of minutes. A throttled run would cache silhouettes over real faces. The script detects the throttle signature and exits non-zero with a clear message; if that happens, wait for the block to clear and re-run. A clean run exits zero and writes `public/assets/asset-cache-report.json` with the counts and the exact list of players whose photo is genuinely absent (new signings the CDN has not published yet).
+3. Confirm the run was clean: `asset-cache-report.json` shows `"trustworthy": true` and `failed: 0`. Re-check the `missing404` list - those players will show the neutral silhouette on the board (never a broken image), which is acceptable, but re-running the caching pass closer to the auction often picks up photos the CDN has since published.
+4. `public/assets/` is gitignored on purpose: the ~1,700 cached binaries are produced per-machine at pre-flight, never committed to the public repo. Each machine that serves on the night (primary and fallback laptop) runs the pass for itself.
+
+Note on the deployed (Vercel) board: Vercel builds from the public repo, which does not contain `public/assets/`, so the deployed board serves photos from the CDN via the built-in fallback (local path first, CDN second, inline silhouette last). Full local-copy independence applies to the fallback laptop, which is exactly the surface that must keep working if venue wifi or the CDN is unavailable. See "Auction-night resilience".
+
 Draft morning (Aug 2): run the valuations + briefs job from the laptop with `ANTHROPIC_API_KEY` set, against the production `DATABASE_URL`. If it fails, the panels hide and the auction proceeds.
 
 ## Auction-night resilience
@@ -90,8 +101,8 @@ The fallback drill gets a timed rehearsal during Run 4 - it doesn't count as a p
 |---|---|
 | Now (Run 2-3 window) | Vercel account + project + env; roster env-var code change lands; production DB prepared; first smoke test. Running the port walk early de-risks Run 4 - nothing about it depends on the UI runs |
 | Run 4 (Jul 28-Aug 1) | Failure drills, runbook + auctioneer cheat sheet, dress rehearsal on the production URL, audit scrub |
-| Jul 30-31 | Pool freeze - final ingest, then hands off the player table |
-| Aug 2, morning | Valuations + briefs job; pre-flight checklist |
+| Jul 30-31 | Pool freeze - final ingest, then the asset caching pass (`npm run assets -- --gentle`) on the serving machine and the fallback laptop, then hands off the player table |
+| Aug 2, morning | Valuations + briefs job; pre-flight checklist; re-run the asset caching pass to pick up any newly published photos |
 | Aug 2, night | The auction. Token to the auctioneer; fallback laptop in the room |
 | Aug 3+ | Rotate `COMMISSIONER_TOKEN`; archive the ledger (recap page is the permanent record) |
 

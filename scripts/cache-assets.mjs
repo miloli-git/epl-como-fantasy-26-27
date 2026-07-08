@@ -1,21 +1,38 @@
 // Cache player photos and club crests to public/assets/ so the board never
-// depends on the venue wifi on the night (THE HYBRID board uses a big 250x250
-// portrait plus 110x140 face thumbnails, and club crests).
+// depends on the venue wifi on the night (THE HYBRID board uses a big portrait
+// plus a face thumbnail, and club crests). The Premier League CDN serves these
+// at 2x the nominal path size: the "250x250" path returns a 500x500 PNG and
+// "110x140" returns 220x280, so the TV spotlight portrait is genuinely 500px.
 //
 // Usage:
 //   node --env-file=.env scripts/cache-assets.mjs           all players, both sizes + crests
+//   node --env-file=.env scripts/cache-assets.mjs --gentle  same, slowest pacing (safest for the pre-flight full run)
 //   node --env-file=.env scripts/cache-assets.mjs --demo    only current-lot + sold players (fast, for a demo)
 //   node --env-file=.env scripts/cache-assets.mjs --sample  first 5 players + 5 crests (smoke test)
+//   node --env-file=.env scripts/cache-assets.mjs --max 40  cap the player count (proving/partial runs)
+// Pacing overrides (env): CACHE_CONCURRENCY, CACHE_PAUSE_MS, CACHE_COOLOFF_MS.
 //
 // Layout written:
-//   public/assets/players/250/p{code}.png   big board portrait
-//   public/assets/players/110/p{code}.png   face thumbnail (sold rail, ledger, console)
-//   public/assets/badges/t{code}.png        club crest
+//   public/assets/players/250/p{code}.png   big board portrait (500x500 from the CDN)
+//   public/assets/players/110/p{code}.png   face thumbnail (220x280 from the CDN)
+//   public/assets/badges/t{code}.png        club crest (200x200 from the CDN)
 //   public/assets/silhouette.svg            neutral fallback (never a broken image)
+//   public/assets/asset-cache-report.json   machine-readable run summary + missing list
 //
-// Behaviour: skips files that already exist, retries with backoff, tolerates
-// 404/403 "missing upstream" without failing (some players have no photo -> the
-// board shows the silhouette), but exits 1 on a real network/5xx failure.
+// THE CDN RATE LIMIT (learned the hard way, 8 Jul): resources.premierleague.com
+// is S3 behind CloudFront. A burst of ~1000+ requests trips a per-IP limit and
+// the CDN then returns "403 AccessDenied" for EVERY request, including photos
+// that exist, for a cool-off period. S3 also returns that SAME 403 for objects
+// that genuinely do not exist (no ListBucket permission) - so a 403 is
+// ambiguous between "no photo yet" and "you are being throttled", and the only
+// trustworthy run is one paced gently enough never to trip the limit.
+//
+// This script therefore: paces gently by default; retries a 403 with backoff;
+// on a run of consecutive 403s it assumes throttling and cools the whole pool
+// off before resuming; and if a run shows the throttle signature (any cool-off,
+// or a high 403 rate) it exits NON-ZERO so an unattended pre-flight run fails
+// loudly instead of silently caching hundreds of silhouettes over real faces.
+// A genuine 404 is tolerated (silhouette covers it) and does not fail the run.
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -32,6 +49,13 @@ if (!url) {
 
 const sample = process.argv.includes("--sample");
 const demo = process.argv.includes("--demo");
+const gentle = process.argv.includes("--gentle");
+const maxArgIdx = process.argv.indexOf("--max");
+const maxPlayers = maxArgIdx !== -1 ? Number.parseInt(process.argv[maxArgIdx + 1], 10) : null;
+if (maxArgIdx !== -1 && (!Number.isInteger(maxPlayers) || maxPlayers <= 0)) {
+  console.error("--max needs a positive whole number, e.g. --max 40.");
+  process.exit(1);
+}
 
 const PHOTO_250 = (code) =>
   `https://resources.premierleague.com/premierleague/photos/players/250x250/p${code}.png`;
@@ -51,10 +75,46 @@ const SILHOUETTE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 250
 writeFileSync(join(assetsDir, "silhouette.svg"), SILHOUETTE);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const CONCURRENCY = 5;
-const PAUSE_MS = 60;
-const MAX_ATTEMPTS = 3;
-const tally = { downloaded: 0, skipped: 0, missing: [], failed: [], forbidden: 0 };
+
+// Gentle by default; --gentle is gentler still; env overrides win. The old
+// defaults (5 / 60ms) tripped the CDN limit around the 1000th request.
+const CONCURRENCY = Number(process.env.CACHE_CONCURRENCY) || (gentle ? 1 : 3);
+const PAUSE_MS = Number(process.env.CACHE_PAUSE_MS) || (gentle ? 400 : 150);
+const COOLOFF_MS = Number(process.env.CACHE_COOLOFF_MS) || 60000;
+const MAX_ATTEMPTS = 4;
+// Consecutive 403s that trip a global cool-off (assume throttling, not that
+// this many players in a row genuinely lack a photo).
+const THROTTLE_STREAK = 8;
+// If the overall 403 rate across a real run is above this, the missing list is
+// not trustworthy (throttle contamination) and the run fails.
+const THROTTLE_RATE = 0.15;
+
+const tally = {
+  downloaded: 0,
+  skipped: 0,
+  missing404: [], // genuine "no object" (silhouette covers) - does not fail the run
+  denied403: [],  // 403 after retries: missing-or-throttled, ambiguous
+  failed: [],     // network / 5xx after retries - always fails the run
+  coolOffs: 0,
+};
+// Shared throttle state across the worker pool.
+let consec403 = 0;
+let coolingOff = null; // a promise while the pool is paused
+
+async function maybeCoolOff() {
+  if (consec403 >= THROTTLE_STREAK && !coolingOff) {
+    tally.coolOffs += 1;
+    console.log(
+      `WARNING: ${consec403} consecutive 403s - assuming CDN throttling. ` +
+      `Cooling off ${Math.round(COOLOFF_MS / 1000)}s before resuming...`,
+    );
+    coolingOff = sleep(COOLOFF_MS).then(() => {
+      consec403 = 0;
+      coolingOff = null;
+    });
+  }
+  if (coolingOff) await coolingOff;
+}
 
 async function download(jobUrl, dest, label) {
   if (existsSync(dest)) {
@@ -62,15 +122,28 @@ async function download(jobUrl, dest, label) {
     return;
   }
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    await maybeCoolOff();
     try {
       const res = await fetch(jobUrl);
-      if (res.status === 404 || res.status === 403) {
-        if (res.status === 403) tally.forbidden += 1;
-        tally.missing.push(`${label} (HTTP ${res.status})`);
+      if (res.status === 404) {
+        consec403 = 0;
+        tally.missing404.push(label);
+        return;
+      }
+      if (res.status === 403) {
+        consec403 += 1;
+        // Honour Retry-After if the CDN sends one; else exponential backoff.
+        const retryAfter = Number(res.headers.get("retry-after"));
+        if (attempt < MAX_ATTEMPTS) {
+          await sleep(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 500 * attempt);
+          continue;
+        }
+        tally.denied403.push(label);
         return;
       }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       writeFileSync(dest, Buffer.from(await res.arrayBuffer()));
+      consec403 = 0;
       tally.downloaded += 1;
       return;
     } catch (err) {
@@ -109,7 +182,8 @@ try {
   }
 
   const teamCodes = [...new Set(players.map((p) => p.team_code).filter((c) => c != null))];
-  const photoRows = sample ? players.slice(0, 5) : players;
+  let photoRows = sample ? players.slice(0, 5) : players;
+  if (maxPlayers != null) photoRows = photoRows.slice(0, maxPlayers);
   const crestCodes = sample ? teamCodes.slice(0, 5) : teamCodes;
 
   const jobs = [
@@ -120,22 +194,57 @@ try {
 
   console.log(
     `caching ${photoRows.length} players x2 sizes + ${crestCodes.length} crests` +
-    (demo ? " (demo scope)" : sample ? " (sample)" : "") + `; silhouette written`,
+    (demo ? " (demo scope)" : sample ? " (sample)" : "") +
+    ` at concurrency ${CONCURRENCY}, ${PAUSE_MS}ms pause; silhouette written`,
   );
   await runPool(jobs);
 
+  const attempts = tally.downloaded + tally.missing404.length + tally.denied403.length + tally.failed.length;
+  const rate403 = attempts > 0 ? tally.denied403.length / attempts : 0;
+  const throttled = tally.coolOffs > 0 || (tally.denied403.length >= 5 && rate403 > THROTTLE_RATE);
+
   console.log(
     `done: ${tally.downloaded} downloaded, ${tally.skipped} cached, ` +
-    `${tally.missing.length} missing upstream (silhouette will cover), ${tally.failed.length} failed.`,
+    `${tally.missing404.length} genuinely missing (404, silhouette covers), ` +
+    `${tally.denied403.length} denied (403), ${tally.failed.length} failed, ${tally.coolOffs} cool-offs.`,
   );
-  const attempts = tally.downloaded + tally.missing.length + tally.failed.length;
-  if (tally.forbidden >= 3 && tally.forbidden / attempts > 0.2) {
-    console.log(`WARNING: ${tally.forbidden}/${attempts} were HTTP 403 - possible CDN rate-limiting; re-run slower.`);
-  }
+
+  // Persist a machine-readable report so the missing list can be re-checked
+  // near the freeze (the CDN publishes new-signing photos over the summer).
+  const report = {
+    generatedAt: new Date().toISOString(),
+    concurrency: CONCURRENCY,
+    pauseMs: PAUSE_MS,
+    trustworthy: !throttled && tally.failed.length === 0,
+    counts: {
+      downloaded: tally.downloaded,
+      cached: tally.skipped,
+      missing404: tally.missing404.length,
+      denied403: tally.denied403.length,
+      failed: tally.failed.length,
+      coolOffs: tally.coolOffs,
+    },
+    missing404: tally.missing404,
+    denied403: tally.denied403,
+    failed: tally.failed,
+  };
+  writeFileSync(join(assetsDir, "asset-cache-report.json"), JSON.stringify(report, null, 2));
+
   if (tally.failed.length > 0) {
     for (const f of tally.failed) console.log(`  - failed: ${f}`);
-    process.exitCode = 1;
   }
+  if (throttled) {
+    console.log(
+      `THROTTLED: ${tally.denied403.length} of ${attempts} requests were 403 ` +
+      `(${(rate403 * 100).toFixed(0)}%)${tally.coolOffs ? ` and the pool cooled off ${tally.coolOffs}x` : ""}. ` +
+      "The CDN rate-limited this run, so the missing list is NOT trustworthy " +
+      "(real photos may be recorded as missing). Wait for the block to clear " +
+      "(tens of minutes), then re-run with --gentle. Do NOT treat this run as the pre-flight cache.",
+    );
+  }
+  // Fail the run on any hard failure OR the throttle signature. A clean run
+  // with only genuine 404s exits 0.
+  if (tally.failed.length > 0 || throttled) process.exitCode = 1;
 } catch (err) {
   console.error("cache-assets failed:", err.message);
   process.exit(1);
