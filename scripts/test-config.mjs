@@ -12,6 +12,7 @@ import {
   buildConfig,
   minOpenBid,
   openBidFor,
+  selectLocalOverride,
   squadSize,
   tierFor,
 } from "../lib/config-core.mjs";
@@ -168,6 +169,79 @@ check("deepMerge skips __proto__/constructor/prototype keys", () => {
     "__proto__ not copied onto the merged config",
   );
   assertEqual(cfg.polluted, undefined, "merged config has no polluted key");
+});
+
+// (g) LEAGUE_CONFIG_LOCAL env-var override (issue #22)
+check("env override only: names come from LEAGUE_CONFIG_LOCAL", () => {
+  const envText = JSON.stringify({ managers: ["Env A", "Env B"], budget: 4200 });
+  const { local, source } = selectLocalOverride({ localFileText: null, envText });
+  assertEqual(source, "env", "source");
+  const cfg = buildConfig(base(), local);
+  assertEqual(cfg.managers, ["Env A", "Env B"], "managers from env");
+  assertEqual(cfg.budget, 4200, "budget from env");
+});
+
+check("file override only: names come from the local file", () => {
+  const localFileText = JSON.stringify({ managers: ["File A", "File B", "File C"] });
+  const { local, source } = selectLocalOverride({ localFileText, envText: null });
+  assertEqual(source, "file", "source");
+  const cfg = buildConfig(base(), local);
+  assertEqual(cfg.managers, ["File A", "File B", "File C"], "managers from file");
+});
+
+check("both present: the local FILE wins over the env var", () => {
+  const localFileText = JSON.stringify({ managers: ["File wins"] });
+  const envText = JSON.stringify({ managers: ["Env loses"] });
+  const { local, source } = selectLocalOverride({ localFileText, envText });
+  assertEqual(source, "file", "source is file");
+  const cfg = buildConfig(base(), local);
+  assertEqual(cfg.managers, ["File wins"], "file managers win");
+});
+
+check("neither present: base placeholders stand", () => {
+  const { local, source } = selectLocalOverride({ localFileText: null, envText: null });
+  assertEqual(source, "none", "source");
+  assertEqual(local, undefined, "no override");
+  const cfg = buildConfig(base(), local);
+  assertEqual(cfg.managers[0], "Manager 1", "placeholder name");
+});
+
+check("blank/whitespace env var is treated as absent, not malformed", () => {
+  const { source } = selectLocalOverride({ localFileText: null, envText: "   " });
+  assertEqual(source, "none", "whitespace env -> none");
+});
+
+check("malformed env JSON fails LOUDLY, naming the env var", () => {
+  assertThrowsNaming(
+    () => selectLocalOverride({ localFileText: null, envText: "{ not json" }),
+    "LEAGUE_CONFIG_LOCAL",
+    "malformed env var",
+  );
+});
+
+check("malformed local FILE fails LOUDLY, naming the file", () => {
+  assertThrowsNaming(
+    () => selectLocalOverride({ localFileText: "{ not json", envText: null }),
+    "league.config.local.json",
+    "malformed local file",
+  );
+});
+
+check("env var that is a JSON array (not an object) fails loudly", () => {
+  assertThrowsNaming(
+    () => selectLocalOverride({ localFileText: null, envText: "[1,2,3]" }),
+    "LEAGUE_CONFIG_LOCAL",
+    "env var array",
+  );
+});
+
+check("a valid file is NOT rejected because the env var is malformed (file wins first)", () => {
+  const localFileText = JSON.stringify({ managers: ["File A"] });
+  const { local, source } = selectLocalOverride({ localFileText, envText: "{ not json" });
+  assertEqual(source, "file", "file short-circuits before the bad env var");
+  // ...and the file's roster actually lands (not just the source label).
+  const cfg = buildConfig(base(), local);
+  assertEqual(cfg.managers, ["File A"], "file managers survive the bad env var");
 });
 
 // (d) tierFor with the default bands

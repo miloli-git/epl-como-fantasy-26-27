@@ -23,6 +23,7 @@ import {
   buildConfig as buildConfigCore,
   minOpenBid as minOpenBidCore,
   openBidFor as openBidForCore,
+  selectLocalOverride,
   squadSize as squadSizeCore,
   tierFor as tierForCore,
 } from "./config-core.mjs";
@@ -114,23 +115,24 @@ export function getConfig(): LeagueConfig {
     localDirs = rootCandidates();
   }
 
-  // Local override: fs-only (gitignored, so never in the bundle). Best-effort
-  // when the base came from the bundle.
-  let local: Record<string, unknown> | undefined;
+  // Local override, two possible sources (issue #22):
+  //   - league.config.local.json on disk (dev / draft machine), gitignored so
+  //     never in the bundle; read here with fs, and
+  //   - the LEAGUE_CONFIG_LOCAL env var (Vercel builds from the public repo and
+  //     cannot see the file).
+  // The file wins when both exist; malformed JSON in the chosen source throws
+  // loudly. All of that precedence + loud-failure logic lives in the pure
+  // selectLocalOverride so scripts/test-config.mjs tests the exact same rules.
+  let localFileText: string | null = null;
   for (const dir of localDirs) {
-    try {
-      const localPath = join(dir, LOCAL_FILE);
-      if (existsSync(localPath)) {
-        local = JSON.parse(readFileSync(localPath, "utf8")) as Record<
-          string,
-          unknown
-        >;
-        break;
-      }
-    } catch {
-      // Unreadable override in a fallback location: skip it, keep the base.
+    const localPath = join(dir, LOCAL_FILE);
+    if (existsSync(localPath)) {
+      localFileText = readFileSync(localPath, "utf8");
+      break;
     }
   }
+  const envText = process.env.LEAGUE_CONFIG_LOCAL ?? null;
+  const { local } = selectLocalOverride({ localFileText, envText });
 
   cached = buildConfig(base, local);
   return cached;
