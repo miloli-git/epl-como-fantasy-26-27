@@ -1,4 +1,4 @@
-# Porting — NAS reference → Vercel
+# Porting - NAS reference → Vercel
 
 > The portability claim is a v1 acceptance criterion, not a hope. This walk must complete with **no code change**. If it doesn't, that's a bug to fix in the app, not to patch around in the deploy.
 
@@ -27,5 +27,5 @@ Log it as an issue and fix the *app* so the next port is clean. Record the failu
 
 ## Self-host (reference, for parity)
 
-- `docker build` with `output: standalone`; pass `DATABASE_URL` + `COMMISSIONER_TOKEN` as env (volume-mount or env file — do not bake secrets into the image).
+- `docker build` with `output: standalone`; pass `DATABASE_URL` + `COMMISSIONER_TOKEN` as env (volume-mount or env file - do not bake secrets into the image).
 - Recreate a running container with `docker compose up -d --force-recreate` (plain `--build` will NOT replace a running container).

@@ -1,4 +1,4 @@
-# Handoff — Reference build and Vercel port
+# Handoff - Reference build and Vercel port
 
 > Status: DRAFT for review.
 
@@ -20,7 +20,7 @@ Every piece that would normally break a serverless port has been avoided up fron
 | Custom Node server | **Next.js** App Router | first-class on Vercel; self-hosts via `output: standalone` |
 | Background workers | FPL ingest is a **plain script** (`npm run ingest`) | run manually or as a cron |
 
-## Porter's agent — port checklist
+## Porter's agent - port checklist
 
 See `docs/PORTING.md` for the full walk. In short: clone → provision Postgres → set env → `db:setup` + `ingest` → `vercel deploy` → verify in a browser. No source change should be required; if one is, that's a portability bug to fix in the app.
 
