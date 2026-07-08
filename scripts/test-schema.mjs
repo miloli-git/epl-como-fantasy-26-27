@@ -19,7 +19,7 @@ const CHECK_VIOLATION = "23514";
 
 let failed = false;
 function report(name, ok, detail = "") {
-  console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`);
+  console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? ` - ${detail}` : ""}`);
   if (!ok) failed = true;
 }
 

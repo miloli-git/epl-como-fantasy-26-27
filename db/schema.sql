@@ -1,4 +1,4 @@
--- EPL Como Fantasy 26/27 — Postgres schema
+-- EPL Como Fantasy 26/27 - Postgres schema
 -- Target shape per handoff 04-DATA-MODEL.md. Config (budget, squad, managers)
 -- lives in league.config.json, NOT here, so the schema is season-agnostic.
 --
@@ -35,7 +35,7 @@ create table if not exists managers (
 
 -- Player pool, sourced from the FPL API (scripts/ingest-fpl.mjs).
 create table if not exists players (
-  id              integer primary key,   -- FPL element id (changes yearly — snapshot per season)
+  id              integer primary key,   -- FPL element id (changes yearly - snapshot per season)
   code            integer,               -- stable PL code, drives photo URL p{code}.png
   web_name        text,
   first_name      text,
