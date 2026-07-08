@@ -13,6 +13,7 @@ import {
   resolveOwnership as resolveOwnershipCore,
   saleVerdict as saleVerdictCore,
   scarcityAlerts as scarcityAlertsCore,
+  tradeCashByManager as tradeCashByManagerCore,
 } from "./derive-core.mjs";
 
 export interface OwnedPlayer {
@@ -21,6 +22,21 @@ export interface OwnedPlayer {
   /** The salary the player carries (sale price; travels through trades). */
   price: number;
   position: Position;
+}
+
+export interface TradeMovement {
+  playerId: number;
+  fromManager: number;
+  toManager: number;
+  /** Chronological order key; higher = later. Latest movement wins. */
+  seq: number;
+}
+
+export interface TradeCashRow {
+  managerA: number;
+  managerB: number;
+  cashAToB: number;
+  cashBToA: number;
 }
 
 export interface ManagerDerived {
@@ -56,30 +72,39 @@ export interface VerdictResult {
 }
 
 /**
- * Resolve current ownership. Sales rows are deleted on void, so every
- * existing sales row is a current ownership. Trade movements fold in at S3
- * (see the seam comment in derive-core).
+ * Resolve current ownership. Sales rows are deleted on void, so every existing
+ * sales row is a current ownership; trade movements then MOVE ownership (the
+ * salary travels with the player). Pass only non-voided movements.
  */
 export function resolveOwnership(
   saleRows: OwnedPlayer[],
-  tradeMovements: unknown[] = [],
+  tradeMovements: TradeMovement[] = [],
 ): OwnedPlayer[] {
   return resolveOwnershipCore(saleRows, tradeMovements) as OwnedPlayer[];
+}
+
+/** Net trade cash per manager in spend terms (positive = paid out). */
+export function tradeCashByManager(
+  tradeRows: TradeCashRow[],
+): Record<number, number> {
+  return tradeCashByManagerCore(tradeRows) as Record<number, number>;
 }
 
 export function deriveManager(
   cfg: LeagueConfig,
   owned: OwnedPlayer[],
+  cashOut = 0,
 ): ManagerDerived {
-  return deriveManagerCore(cfg, owned) as ManagerDerived;
+  return deriveManagerCore(cfg, owned, cashOut) as ManagerDerived;
 }
 
 export function deriveManagers(
   cfg: LeagueConfig,
   managers: ManagerRow[],
   ownership: OwnedPlayer[],
+  cashByManager: Record<number, number> = {},
 ): Array<ManagerRow & ManagerDerived & { managerId: number }> {
-  return deriveManagersCore(cfg, managers, ownership) as Array<
+  return deriveManagersCore(cfg, managers, ownership, cashByManager) as Array<
     ManagerRow & ManagerDerived & { managerId: number }
   >;
 }

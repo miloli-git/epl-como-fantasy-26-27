@@ -10,6 +10,7 @@ import {
   resolveOwnership,
   saleVerdict,
   scarcityAlerts,
+  tradeCashByManager,
 } from "../lib/derive-core.mjs";
 
 // Same shape as league.config.json (budget 3000, minOpenBid 5) so the mockup
@@ -106,15 +107,82 @@ function ownedRows(managerId, count, total, positions) {
   eq("deriveManagers: empty manager numbers", [m2.spent, m2.remaining, m2.openSlots, m2.maxBid], [0, 3000, 15, 3000 - 5 * 14]);
 }
 
-// --- resolveOwnership seam: trade movements are refused until S3 ---
+// --- resolveOwnership: trade folding (issues #15/#18) ---
+// Two sold players; a trade moves one of them. Salary travels with the player.
 {
-  let threw = false;
-  try {
-    resolveOwnership([], [{ tradeId: 1 }]);
-  } catch {
-    threw = true;
-  }
-  eq("resolveOwnership: trade movements refused until S3", threw, true);
+  const sales = [
+    { playerId: 100, managerId: 1, price: 500, position: "MID" },
+    { playerId: 101, managerId: 2, price: 300, position: "FWD" },
+  ];
+  const own = resolveOwnership(sales, [
+    { playerId: 100, fromManager: 1, toManager: 2, seq: 1 },
+  ]);
+  const byPlayer = Object.fromEntries(own.map((o) => [o.playerId, o]));
+  eq("trade folding: player 100 now owned by manager 2", byPlayer[100].managerId, 2);
+  eq("trade folding: salary travels unchanged ($500)", byPlayer[100].price, 500);
+  eq("trade folding: manager 1 owns nothing now", own.filter((o) => o.managerId === 1).length, 0);
+}
+
+// Chain A->B then B->C lands on C, regardless of input order.
+{
+  const sales = [{ playerId: 100, managerId: 1, price: 500, position: "MID" }];
+  const movements = [
+    { playerId: 100, fromManager: 2, toManager: 3, seq: 2 },
+    { playerId: 100, fromManager: 1, toManager: 2, seq: 1 },
+  ];
+  const own = resolveOwnership(sales, movements);
+  eq("trade folding: chain 1->2->3 lands on 3 (input unordered)", own[0].managerId, 3);
+}
+
+// A movement for a player with no sale row is ignored (cannot trade an unsold player).
+{
+  const sales = [{ playerId: 100, managerId: 1, price: 500, position: "MID" }];
+  const own = resolveOwnership(sales, [
+    { playerId: 999, fromManager: 1, toManager: 2, seq: 1 },
+  ]);
+  eq("trade folding: movement for unsold player ignored", [own.length, own[0].managerId], [1, 1]);
+}
+
+// --- tradeCashByManager: net cash in spend terms, both directions ---
+{
+  // manager 1 pays 200 to manager 2; separately manager 2 pays 50 to manager 1.
+  const net = tradeCashByManager([
+    { managerA: 1, managerB: 2, cashAToB: 200, cashBToA: 0 },
+    { managerA: 2, managerB: 1, cashAToB: 50, cashBToA: 0 },
+  ]);
+  // manager 1: paid 200, received 50 -> net out 150. manager 2: mirror -> -150.
+  eq("tradeCash: net cash out per manager", [net[1], net[2]], [150, -150]);
+}
+
+// --- deriveManager: cashOut folds into spend ---
+{
+  const owned = ownedRows(1, 1, 500, ["MID"]);
+  const d = deriveManager(cfg, owned, 150); // paid 150 net cash out
+  eq("deriveManager: cashOut adds to spend", [d.spent, d.remaining], [650, 2350]);
+  const r = deriveManager(cfg, owned, -200); // received 200 net cash
+  eq("deriveManager: cash received lifts remaining", [r.spent, r.remaining], [300, 2700]);
+}
+
+// --- integration: salary travel + cash, conserved across both managers ---
+// manager 1 trades its $500 player to manager 2 for $200 cash (2 pays 1).
+{
+  const managers = [{ id: 1, slot: 1, short: "M1" }, { id: 2, slot: 2, short: "M2" }];
+  const sales = [
+    { playerId: 100, managerId: 1, price: 500, position: "MID" },
+    { playerId: 101, managerId: 2, price: 300, position: "FWD" },
+  ];
+  const trades = [{ managerA: 1, managerB: 2, cashAToB: 0, cashBToA: 200 }];
+  const ownership = resolveOwnership(sales, [
+    { playerId: 100, fromManager: 1, toManager: 2, seq: 1 },
+  ]);
+  const cash = tradeCashByManager(trades);
+  const [m1, m2] = deriveManagers(cfg, managers, ownership, cash);
+  // manager 1: no players, received $200 -> spent -200, remaining 3200, 15 open.
+  eq("integration: seller after trade", [m1.spent, m1.remaining, m1.openSlots], [-200, 3200, 15]);
+  // manager 2: owns both salaries ($800) + paid $200 -> spent 1000, remaining 2000, 13 open.
+  eq("integration: buyer after trade", [m2.spent, m2.remaining, m2.openSlots], [1000, 2000, 13]);
+  // conservation: remaining sums unchanged by the trade (5200 before and after).
+  eq("integration: total remaining conserved", m1.remaining + m2.remaining, 5200);
 }
 
 // --- tertiles: known 6-sale fixture ---

@@ -104,6 +104,23 @@ export interface UpNextEntry {
   tier: number | null;
 }
 
+export interface TradePlayerLeg {
+  playerId: number;
+  name: string | null;
+  fromShort: string | null;
+  toShort: string | null;
+}
+
+export interface RecentTrade {
+  tradeId: number;
+  managerAShort: string | null;
+  managerBShort: string | null;
+  cashAToB: number;
+  cashBToA: number;
+  players: TradePlayerLeg[];
+  createdAt: string;
+}
+
 export interface StatePayload {
   version: number;
   phase: number;
@@ -113,6 +130,7 @@ export interface StatePayload {
   upNext: UpNextEntry[];
   nominationTurn: number | null;
   recentSales: RecentSale[];
+  recentTrades: RecentTrade[];
   managers: ManagerState[];
   pool: PoolCounts;
   scarcity: string[];

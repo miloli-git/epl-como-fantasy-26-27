@@ -18,6 +18,7 @@
     "test:draft": "node --env-file=.env scripts/test-draft.mjs",
     "test:draft-concurrency": "node --env-file=.env scripts/test-draft-concurrency.mjs",
     "test:corrections": "node --env-file=.env scripts/test-corrections.mjs",
+    "test:trade": "node --env-file=.env scripts/test-trade.mjs",
     "test:lot": "node --env-file=.env scripts/test-lot.mjs",
     "test:ui": "node --env-file=.env scripts/test-ui.mjs"
   },

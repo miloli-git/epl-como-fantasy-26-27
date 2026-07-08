@@ -202,6 +202,38 @@ export default function Board() {
             </ul>
           </section>
 
+          {/* ---- recent trades ---- */}
+          {/* Structural only, no design tokens: the board announces recorded
+              trades (players moved + cash). Styling lands with the design run. */}
+          <section>
+            <h2>Recent trades</h2>
+            <ul data-testid="recent-trades">
+              {payload.recentTrades.length === 0 && <li>no trades yet</li>}
+              {payload.recentTrades.map((t) => (
+                <li key={t.tradeId}>
+                  <strong>
+                    {t.managerAShort ?? "?"} {"<->"} {t.managerBShort ?? "?"}
+                  </strong>
+                  {t.players.map((p) => (
+                    <span key={p.playerId} style={{ marginLeft: 8 }}>
+                      {p.name ?? `#${p.playerId}`} {p.fromShort ?? "?"} {"->"} {p.toShort ?? "?"}
+                    </span>
+                  ))}
+                  {t.cashAToB > 0 && (
+                    <span style={{ marginLeft: 8 }}>
+                      cash {t.managerAShort ?? "?"} {"->"} {t.managerBShort ?? "?"} {money(t.cashAToB)}
+                    </span>
+                  )}
+                  {t.cashBToA > 0 && (
+                    <span style={{ marginLeft: 8 }}>
+                      cash {t.managerBShort ?? "?"} {"->"} {t.managerAShort ?? "?"} {money(t.cashBToA)}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+
           {/* ---- pool counts ---- */}
           <section>
             <h2>Pool (position x tier)</h2>
