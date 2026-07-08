@@ -37,14 +37,22 @@ export type EditResult =
   | CorrectionRejection;
 export type VoidResult = { ok: true; voided: SaleSnapshot } | CorrectionRejection;
 
-/** Undo the most recent sale and put the player back on the block. */
-export async function undoLastSale(args: { actor: string }): Promise<UndoResult> {
+/**
+ * Undo the most recent sale and put the player back on the block. When
+ * expectedSaleId is given, the undo only proceeds if the newest sale still
+ * has that id (double-submit guard; 'stale_undo' rejection otherwise).
+ */
+export async function undoLastSale(args: {
+  actor: string;
+  expectedSaleId?: number;
+}): Promise<UndoResult> {
   return (await undoLastSaleCore(sql, getConfig(), args)) as UndoResult;
 }
 
-/** Edit any sale (manager and/or price), re-validating full legality. */
+/** Edit any sale (player, manager and/or price), re-validating full legality. */
 export async function editSale(args: {
   saleId: number;
+  playerId?: number;
   managerId?: number;
   price?: number;
   reason: string;

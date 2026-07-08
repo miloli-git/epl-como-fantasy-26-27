@@ -58,19 +58,24 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
     // Reject unexpected keys loudly: a client trying to change a field this
-    // route does not support (e.g. playerId) must get a clear 400, not a
-    // silent partial edit.
-    const ALLOWED_KEYS = new Set(["managerId", "price", "reason"]);
+    // route does not support must get a clear 400, not a silent partial edit.
+    const ALLOWED_KEYS = new Set(["playerId", "managerId", "price", "reason"]);
     const unexpectedKey = Object.keys((body ?? {}) as Record<string, unknown>).find(
       (key) => !ALLOWED_KEYS.has(key),
     );
     if (unexpectedKey !== undefined) {
       return NextResponse.json(
-        { error: `unexpected key "${unexpectedKey}" - allowed keys: managerId, price, reason` },
+        { error: `unexpected key "${unexpectedKey}" - allowed keys: playerId, managerId, price, reason` },
         { status: 400, headers: NO_STORE },
       );
     }
-    const { managerId, price, reason } = (body ?? {}) as Record<string, unknown>;
+    const { playerId, managerId, price, reason } = (body ?? {}) as Record<string, unknown>;
+    if (playerId !== undefined && !Number.isInteger(playerId)) {
+      return NextResponse.json(
+        { error: "playerId, when present, must be a whole number" },
+        { status: 400, headers: NO_STORE },
+      );
+    }
     if (managerId !== undefined && !Number.isInteger(managerId)) {
       return NextResponse.json(
         { error: "managerId, when present, must be a whole number" },
@@ -92,6 +97,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     const result = await editSale({
       saleId,
+      playerId: playerId as number | undefined,
       managerId: managerId as number | undefined,
       price: price as number | undefined,
       reason: (reason as string | undefined) ?? "",

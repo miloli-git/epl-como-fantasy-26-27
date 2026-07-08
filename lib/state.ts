@@ -69,6 +69,8 @@ export interface ManagerState {
 }
 
 export interface RecentSale {
+  /** Sale row id - what the undo double-submit guard sends as expectedSaleId. */
+  saleId: number;
   playerId: number;
   playerName: string;
   position: Position;

@@ -337,10 +337,20 @@ export default function Console() {
         </button>{" "}
         <button
           data-testid="undo-sale"
-          disabled={busy}
+          disabled={busy || !payload?.recentSales?.length}
+          title={
+            payload?.recentSales?.length ? undefined : "No sale visible to undo yet"
+          }
           onClick={() => {
+            // Double-submit guard: pin the undo to the newest sale this
+            // console has SEEN (recentSales is newest-first). The server
+            // rejects with stale_undo if the last sale changed meanwhile.
+            // The button is disabled until a sale is visible, so there is
+            // never an unguarded DELETE.
+            const expectedSaleId = payload?.recentSales?.[0]?.saleId;
+            if (expectedSaleId == null) return;
             if (window.confirm("Undo the last sale?")) {
-              write("/api/draft/latest", "DELETE");
+              write("/api/draft/latest", "DELETE", { expectedSaleId });
             }
           }}
         >

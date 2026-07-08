@@ -11,7 +11,7 @@
 
 import { readFileSync } from "node:fs";
 import postgres from "postgres";
-import { buildConfig } from "../lib/config-core.mjs";
+import { buildConfig, openBidFor } from "../lib/config-core.mjs";
 import { editSale, undoLastSale, voidSale } from "../lib/corrections-core.mjs";
 
 const url = process.env.DATABASE_URL;
@@ -36,6 +36,9 @@ const ID_HI = 998999;
 const P_A = 998910; // FWD, tier 1
 const P_B = 998911; // MID, tier 4
 const P_C = 998912; // GK, tier 4
+const P_D = 998913; // MID, tier 4 - stays unsold (player-edit target)
+const P_E = 998914; // FWD, tier 1 - stays unsold (player+price tier-open test)
+const P_F = 998915; // FWD, tier 4 - stays unsold (quota-full player-edit test)
 const P_EDIT = 998930; // FWD, tier 4 - the price-edit target
 const SLOT_A = 980; // buyer A
 const SLOT_B = 981; // buyer B
@@ -145,6 +148,9 @@ try {
     { id: P_A, position: "FWD", fpl_price: 13.0, tier: 1 },
     { id: P_B, position: "MID", fpl_price: 5.0, tier: 4 },
     { id: P_C, position: "GK", fpl_price: 4.5, tier: 4 },
+    { id: P_D, position: "MID", fpl_price: 5.0, tier: 4 },
+    { id: P_E, position: "FWD", fpl_price: 12.5, tier: 1 },
+    { id: P_F, position: "FWD", fpl_price: 5.0, tier: 4 },
     { id: P_EDIT, position: "FWD", fpl_price: 5.5, tier: 4 },
   ];
   // Full FWD quota for SLOT_FWD_FULL (cfg.squad.FWD players).
@@ -217,9 +223,24 @@ try {
   const saleB1 = await seedSale(P_B, managerIds[SLOT_B], 5, tieStamp);
 
   versionBefore = await currentVersion();
+
+  // Double-submit guard: an expectedSaleId pointing at anything but the
+  // NEWEST sale (here the older saleA1) must bounce and write nothing.
+  const staleUndo = await undoLastSale(sql, cfg, { actor: ACTOR, expectedSaleId: saleA1 });
+  expectReject("undo with a stale expectedSaleId rejects", staleUndo, "stale_undo");
+  const [{ n: salesAfterStale }] = await sql`
+    select count(*)::int as n from sales
+    where player_id between ${ID_LO} and ${ID_HI}
+  `;
+  report(
+    "stale undo deletes nothing (sale count and version unchanged)",
+    salesAfterStale === 2 && (await currentVersion()) === versionBefore,
+    `fixture sales = ${salesAfterStale}`,
+  );
+
   const undo1 = await undoLastSale(sql, cfg, { actor: ACTOR });
   report(
-    "undo removes the newest sale (created_at tie broken by id)",
+    "undo without expectedSaleId still works: removes the newest sale (created_at tie broken by id)",
     undo1.ok === true && undo1.undone.id === saleB1 && undo1.undone.player_id === P_B,
     undo1.ok ? `undone sale ${undo1.undone.id} (player ${undo1.undone.player_id})` : undo1.message,
   );
@@ -253,9 +274,9 @@ try {
     undoAudit ? JSON.stringify(undoAudit.before) : "no audit row",
   );
 
-  const undo2 = await undoLastSale(sql, cfg, { actor: ACTOR });
+  const undo2 = await undoLastSale(sql, cfg, { actor: ACTOR, expectedSaleId: saleA1 });
   report(
-    "second undo removes the older sale and restores its player",
+    "undo with a MATCHING expectedSaleId succeeds (removes the now-newest sale)",
     undo2.ok === true && undo2.undone.id === saleA1 && (await currentPlayerId()) === P_A,
     undo2.ok ? `undone sale ${undo2.undone.id}` : undo2.message,
   );
@@ -389,6 +410,128 @@ try {
     "editing a nonexistent sale id rejects",
     await editSale(sql, cfg, { saleId: GHOST_SALE_ID, price: 10, reason: "x", actor: ACTOR }),
     "not_found",
+  );
+
+  // --- player edits (issue #10: the wrong-player correction) --------------
+
+  // Onto an already-sold player: P_A is sold to SLOT_A for $50. Must name
+  // the current owner and price, recordSale-style.
+  const ontoSold = await editSale(sql, cfg, {
+    saleId: saleMid, playerId: P_A, reason: "wrong player", actor: ACTOR,
+  });
+  expectReject("player edit onto an already-sold player rejects", ontoSold, "already_sold");
+  report(
+    "already_sold message names the current owner and price",
+    ontoSold.ok === false &&
+      ontoSold.message.includes(`Test C${SLOT_A}`) &&
+      ontoSold.message.includes("$50"),
+    ontoSold.message,
+  );
+
+  // Onto the player currently ON THE BLOCK: P_C was pinned as
+  // current_player_id above and is unsold here, so the ONLY thing rejecting
+  // this edit is the on-block guard (marking the live lot as sold would
+  // strand a sold player as the current lot).
+  versionBefore = await currentVersion();
+  const ontoBlock = await editSale(sql, cfg, {
+    saleId: saleMid, playerId: P_C, reason: "wrong player", actor: ACTOR,
+  });
+  expectReject("player edit onto the on-block player rejects", ontoBlock, "player_on_block");
+  report(
+    "player_on_block message names the player and says to resolve the lot",
+    ontoBlock.ok === false &&
+      ontoBlock.message.includes(`CORR ${P_C}`) &&
+      ontoBlock.message.includes("resolve the lot first"),
+    ontoBlock.message,
+  );
+  const [saleMidUntouched] = await sql`select player_id from sales where id = ${saleMid}`;
+  report(
+    "on-block rejection writes nothing (sale row and version unchanged)",
+    saleMidUntouched.player_id === P_B && (await currentVersion()) === versionBefore,
+  );
+
+  // Onto a nonexistent player.
+  expectReject(
+    "player edit onto a nonexistent player rejects",
+    await editSale(sql, cfg, {
+      saleId: saleMid, playerId: GHOST_SALE_ID, reason: "typo id", actor: ACTOR,
+    }),
+    "unknown_player",
+  );
+
+  // Quota re-check against the NEW player's position: SLOT_FWD_FULL's FWD
+  // quota is full; a GK sale of theirs cannot be edited onto another FWD.
+  const saleGk = await seedSale(P_C, managerIds[SLOT_FWD_FULL], 5, now);
+  const fwdOnFull = await editSale(sql, cfg, {
+    saleId: saleGk, playerId: P_F, reason: "wrong player", actor: ACTOR,
+  });
+  expectReject(
+    "player edit to a position the manager has full rejects",
+    fwdOnFull,
+    "position_full",
+  );
+  report(
+    "position_full message names the filled FWD quota",
+    fwdOnFull.ok === false &&
+      fwdOnFull.message.includes(`${cfg.squad.FWD}/${cfg.squad.FWD}`),
+    fwdOnFull.message,
+  );
+
+  // Player + price together: the floor is the NEW player's tier open. P_E is
+  // tier 1; a price legal for saleMid's current tier-4 player must bounce.
+  const t1Open = openBidFor(cfg, 1);
+  const combo = await editSale(sql, cfg, {
+    saleId: saleMid, playerId: P_E, price: t1Open - 1, reason: "wrong player and price", actor: ACTOR,
+  });
+  expectReject(
+    "player+price edit validates the floor against the NEW player's tier open",
+    combo,
+    "below_open",
+  );
+  report(
+    "below_open message names the tier-1 opening bid",
+    combo.ok === false && combo.message.includes(`$${t1Open}`),
+    combo.message,
+  );
+
+  // The happy path: P_B (MID, sold on saleMid) was the wrong player; the
+  // hammer actually fell on P_D (MID, unsold, same tier).
+  versionBefore = await currentVersion();
+  const playerEdit = await editSale(sql, cfg, {
+    saleId: saleMid, playerId: P_D, reason: "wrong player hammered", actor: ACTOR,
+  });
+  report(
+    "player edit to an unsold same-position player passes",
+    playerEdit.ok === true &&
+      playerEdit.sale.player_id === P_D &&
+      playerEdit.before.player_id === P_B &&
+      playerEdit.sale.price === 50 &&
+      playerEdit.sale.manager_id === managerIds[SLOT_B],
+    playerEdit.ok
+      ? `player ${playerEdit.before.player_id} -> ${playerEdit.sale.player_id}`
+      : `${playerEdit.code}: ${playerEdit.message}`,
+  );
+  const [saleMidRow] = await sql`select player_id from sales where id = ${saleMid}`;
+  report("sale row now carries the new player_id", saleMidRow.player_id === P_D);
+  const [playerAudit] = await sql`
+    select * from audit_log
+    where action = 'sale.edit' and entity = 'sale' and entity_id = ${saleMid}
+    order by id desc limit 1
+  `;
+  report(
+    "player-edit audit row shows the old and new player_id + required reason",
+    playerAudit &&
+      playerAudit.actor === ACTOR &&
+      playerAudit.before?.player_id === P_B &&
+      playerAudit.after?.player_id === P_D &&
+      playerAudit.reason === "wrong player hammered",
+    playerAudit
+      ? `before ${playerAudit.before?.player_id} -> after ${playerAudit.after?.player_id}`
+      : "no audit row",
+  );
+  report(
+    "player edit bumps version by exactly 1",
+    (await currentVersion()) === versionBefore + 1,
   );
 
   report("edits never touch the block", (await currentPlayerId()) === P_C);
