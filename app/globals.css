@@ -230,6 +230,166 @@ section.reveal .paid { font-family: var(--font-display), sans-serif; font-weight
 
 footer { margin-top: 20px; color: var(--muted); font-size: 12px; }
 
+/* ============================================================
+   THE BOARD (mockup 05): a fixed 1600x900 TV canvas scaled to
+   the viewport width. Club-washed per lot. Cells are white on a
+   1px --gap grid. Lives inside .board-frame (which measures width
+   and sets --board-scale; the canvas transform reads it).
+   ============================================================ */
+.board-frame {
+  width: 100%;
+  overflow: hidden;
+  background: var(--ground);
+  line-height: 1.2;
+}
+.board-canvas {
+  width: 1600px;
+  height: 900px;
+  transform-origin: top left;
+  transform: scale(var(--board-scale, 1));
+  background: var(--gap);
+  display: grid;
+  grid-template-columns: 520px 1fr 340px;
+  grid-template-rows: 64px 1fr 232px;
+  gap: 1px;
+  font-variant-numeric: tabular-nums;
+}
+.board-frame.loading { height: 480px; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+.bcell { background: var(--card); overflow: hidden; }
+
+/* top bar (airy) spans both columns */
+.b-top {
+  grid-column: 1 / 4;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 28px;
+  background: var(--card);
+}
+.b-top .kick { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; font-size: 15px; color: var(--bronze); }
+.b-top .lotno { color: var(--muted); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; font-size: 13px; }
+.b-top .spacer { flex: 1; }
+.b-top .meta { color: var(--muted); font-size: 13px; letter-spacing: 0.04em; }
+.b-top .clubname { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: 14px; display: inline-flex; align-items: center; }
+.b-top .clubdot { width: 11px; height: 11px; border-radius: 50%; margin-right: 8px; }
+.b-top .stat-tiny { margin-left: 16px; }
+.b-top .stat-tiny .meta { font-size: 10px; opacity: 0.65; }
+
+/* LEFT: the player, club-washed. Uses --cb-from/--cb-to/--cg/--ct set inline. */
+.b-player { grid-row: 2 / 3; display: flex; flex-direction: column; background: var(--card); }
+.b-band {
+  background: var(--cb-from, #333);
+  color: var(--ct, #fff);
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 24px;
+}
+.b-band img { width: 54px; height: 54px; object-fit: contain; }
+.b-band .club { font-family: var(--font-display); font-weight: 300; font-size: 30px; letter-spacing: -0.02em; line-height: 1; }
+.b-band .clubsub { text-transform: uppercase; font-size: 11px; letter-spacing: 0.09em; opacity: 0.72; margin-top: 4px; }
+.b-bio {
+  background: var(--cg, #222); color: #fff;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+}
+.b-bio > div { padding: 10px 6px; text-align: center; border-left: 1px solid rgba(255,255,255,0.14); }
+.b-bio > div:first-child { border-left: none; }
+.b-bio .bv { font-family: var(--font-display); font-weight: 300; font-size: 26px; line-height: 1; }
+.b-bio .bk { opacity: 0.6; text-transform: uppercase; font-size: 10px; letter-spacing: 0.08em; margin-top: 4px; }
+.b-photo {
+  flex: 1; min-height: 0; position: relative;
+  background: linear-gradient(180deg, var(--cg, #222), var(--cb-to, #111));
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.b-photo img { width: 88%; height: 100%; object-fit: contain; object-position: bottom center; }
+.b-open { position: absolute; top: 16px; right: 20px; background: rgba(0,0,0,0.28); color: #fff; border-radius: 999px; padding: 4px 14px; font-weight: 700; font-size: 15px; letter-spacing: 0.02em; }
+.b-sealed { position: absolute; top: 16px; left: 20px; background: rgba(0,0,0,0.28); color: #fff; border-radius: 999px; padding: 4px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; }
+.b-plate {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 8%, rgba(0,0,0,0.55) 55%, transparent);
+  color: #fff; padding: 60px 26px 20px;
+}
+.b-plate .name { font-family: var(--font-display); font-weight: 300; font-size: 76px; letter-spacing: -0.03em; line-height: 0.98; }
+.b-plate .sub { color: rgba(255,255,255,0.82); margin-top: 6px; font-size: 15px; letter-spacing: 0.03em; }
+.b-plate .chips { margin-top: 12px; display: flex; gap: 8px; }
+.b-plate .chip2 { background: rgba(255,255,255,0.12); color: #fff; border-radius: 999px; padding: 2px 11px; font-size: 12.5px; font-weight: 600; }
+
+/* RIGHT: sold rail + pool + scarcity, stacked */
+.b-right { grid-row: 2 / 3; display: flex; flex-direction: column; gap: 1px; background: var(--gap); }
+.b-right > .bcell { flex: 1; padding: 16px 20px; }
+.b-sechead { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+.sold-row { display: flex; align-items: center; gap: 11px; padding: 6px 0; border-bottom: 1px solid var(--hair); }
+.sold-row:last-child { border-bottom: none; }
+.sold-row img { width: 40px; height: 44px; object-fit: cover; object-position: top; border-radius: 6px; background: var(--chip); }
+.sold-row .pn { font-weight: 600; }
+.sold-row .pm { color: var(--muted); font-size: 13px; }
+.sold-row .pp { margin-left: auto; font-weight: 700; }
+
+.pool-table { width: 100%; font-size: 13px; }
+.pool-table th, .pool-table td { padding: 4px 8px; text-align: right; }
+.pool-table th:first-child, .pool-table td:first-child { text-align: left; color: var(--muted); }
+.scar { color: var(--vb); font-weight: 600; font-size: 14px; padding: 3px 0; }
+
+/* BOTTOM: manager strip spanning both columns */
+.b-mgrs {
+  grid-column: 1 / 4; grid-row: 3 / 4;
+  display: grid; grid-template-columns: repeat(8, 1fr); gap: 1px; background: var(--gap);
+}
+.b-mgr { background: var(--card); padding: 16px 15px; }
+.b-mgr.hot { box-shadow: inset 0 3px 0 var(--cb-from, var(--bronze)); }
+.b-mgr.done { opacity: 0.45; }
+.b-mgr .mn { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 13px; }
+.b-mgr .mrem { float: right; color: var(--muted); font-family: var(--font-body); font-weight: 400; font-size: 13px; letter-spacing: 0; }
+.b-mgr .mr { font-family: var(--font-display); font-weight: 300; font-size: 36px; letter-spacing: -0.03em; margin-top: 4px; }
+.b-mgr .mf { color: var(--muted); font-size: 12px; letter-spacing: 0.03em; margin-top: 10px; }
+
+/* Reveal takeover: full-canvas overlay, the signature moment */
+.b-reveal {
+  grid-column: 1 / 4; grid-row: 1 / 4; z-index: 5;
+  background: var(--ink); color: var(--ground);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+}
+.b-reveal .rp { font-family: var(--font-display); font-weight: 300; font-size: 84px; letter-spacing: -0.03em; }
+.b-reveal .rprice { font-size: 40px; font-weight: 300; }
+.b-reveal .rseal { color: var(--bronze); font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; }
+
+/* CENTER: the player spotlight - points, stat tiles, prior owner, brief */
+.b-spot { grid-row: 2 / 3; background: var(--card); padding: 0; display: flex; flex-direction: column; overflow: hidden; }
+.b-spot-head { background: linear-gradient(120deg, var(--cb-from, #333), var(--cb-to, #111)); color: var(--ct, #fff); padding: 20px 30px 24px; }
+.b-spot-body { padding: 20px 30px 22px; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.b-eyebrow { text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; font-size: 12px; opacity: 0.72; }
+.b-points { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+.b-points .n { font-family: var(--font-display); font-weight: 300; font-size: 116px; line-height: 0.78; letter-spacing: -0.04em; }
+.b-points .ranks { text-align: right; }
+.b-points .ranks .r1 { font-weight: 700; font-size: 20px; }
+.b-points .ranks .r2 { opacity: 0.82; font-size: 15px; margin-top: 4px; }
+.b-stats { display: grid; grid-template-columns: repeat(6, 1fr); margin: 4px 0 20px; }
+.b-stat { border-left: 1px solid var(--hair); padding: 2px 14px; }
+.b-stat:first-child { border-left: none; padding-left: 0; }
+.b-stat .sv { font-family: var(--font-display); font-weight: 300; font-size: 42px; letter-spacing: -0.02em; line-height: 1; }
+.b-stat .sk { color: var(--muted); text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; margin-top: 5px; }
+.b-owner { font-size: 15px; margin: 4px 0 16px; }
+.b-owner .k, .b-brief .k { color: var(--muted); text-transform: uppercase; font-size: 11px; letter-spacing: 0.08em; margin-right: 8px; }
+.b-brief { border-top: 1px solid var(--hair); padding-top: 14px; }
+.b-brief ul { margin: 8px 0 0; padding-left: 18px; }
+.b-brief li { padding: 3px 0; font-size: 15px; }
+.b-spot .spacer { flex: 1; }
+.b-sealline { margin-top: 16px; color: var(--bronze); font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; font-size: 13px; }
+
+/* pool as role bars (mockup): one bar per position, scaled to the busiest role */
+.pool-bar-row { display: flex; align-items: center; gap: 10px; margin: 9px 0; }
+.pool-bar-row .plabel { width: 34px; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.05em; }
+.pool-bar { flex: 1; height: 12px; background: var(--chip); border-radius: 6px; overflow: hidden; display: flex; }
+.pool-bar > i { display: block; height: 100%; }
+.pool-bar-row .pcount { width: 34px; text-align: right; font-weight: 700; font-size: 13px; }
+.scar-box { background: var(--flat); color: var(--vf); border-radius: 8px; padding: 8px 12px; font-size: 13px; font-weight: 600; margin-top: 12px; }
+
+/* manager fills: quota denominators + on-block highlight + full/complete */
+.b-mgr .mf b { color: var(--ink); font-weight: 700; }
+.b-mgr .tag.big { font-family: var(--font-display); font-weight: 300; font-size: 24px; letter-spacing: -0.01em; margin-top: 4px; color: var(--muted); }
+
+/* top-bar richer meta */
+.b-top .facts { color: var(--muted); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
+.b-top .facts b { color: var(--ink); }
+
 /* Phone-responsive: the war-room pages must read on a phone */
 @media (max-width: 640px) {
   .screen { padding: 16px 14px 40px; }

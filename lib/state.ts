@@ -21,6 +21,7 @@ export interface CurrentLot {
   position: Position;
   fplPrice: number | null;
   tier: number | null;
+  lotNo: number | null;
   openBid: number | null;
   stats: {
     pts: number | null;
@@ -73,6 +74,8 @@ export interface RecentSale {
   saleId: number;
   playerId: number;
   playerName: string;
+  /** FPL photo code for the sold-rail face thumbnail (null if unknown). */
+  code: number | null;
   position: Position;
   tier: number | null;
   managerShort: string | null;
@@ -136,6 +139,8 @@ export interface StatePayload {
   scarcity: string[];
   grading: Tertiles | null;
   reveal: Reveal | null;
+  /** Per-position squad quota (from config), for the fills denominators. */
+  squad: Record<Position, number>;
   pollMs: number;
   revealMs: number;
   generatedAt: string;

@@ -1,0 +1,31 @@
+{
+  "_notes": {
+    "purpose": "Per-club colour map for the board's per-lot re-dress (THE HYBRID / Daylight, ruled 8 Jul 2026). Three authored tokens per club; everything else derives in code via lib/club-core.mjs.",
+    "tokens": "p = club-primary (shirt), s = club-secondary (trim), t = club-text (legible on primary; white unless primary is light - WOL and MCI are the dark-text exceptions)",
+    "derived": "band gradient = p -> darken(p,0.62); photo ground = p -> darken(p,0.45); light-page chip = 12% tint of p; nameplate sub = s (fallback #D9D9D5 when s is white)",
+    "keying": "key by FPL team short_name; code = FPL team code (badge filename t{code}). Verify against bootstrap-static at ingest; promoted/renamed clubs get added here. Public-safe: club colours only, no league member data.",
+    "status": "starting values from club brand colours; final tuning on the actual TV at the Sprint 4 club-preview pass. Fix clashes HERE, not in code."
+  },
+  "clubs": {
+    "ARS": { "name": "Arsenal",        "code": 3,   "p": "#EF0107", "s": "#9C824A", "t": "#FFFFFF", "nick": "The Gunners",    "stadium": "Emirates Stadium" },
+    "AVL": { "name": "Aston Villa",    "code": 7,   "p": "#670E36", "s": "#95BFE5", "t": "#FFFFFF", "nick": "The Villans",    "stadium": "Villa Park" },
+    "BOU": { "name": "Bournemouth",    "code": 91,  "p": "#DA291C", "s": "#000000", "t": "#FFFFFF", "nick": "The Cherries",   "stadium": "Vitality Stadium" },
+    "BRE": { "name": "Brentford",      "code": 94,  "p": "#E30613", "s": "#FBB800", "t": "#FFFFFF", "nick": "The Bees",       "stadium": "Gtech Community Stadium" },
+    "BHA": { "name": "Brighton",       "code": 36,  "p": "#0057B8", "s": "#FFCD00", "t": "#FFFFFF", "nick": "The Seagulls",   "stadium": "Amex Stadium" },
+    "BUR": { "name": "Burnley",        "code": 90,  "p": "#6C1D45", "s": "#99D6EA", "t": "#FFFFFF", "nick": "The Clarets",    "stadium": "Turf Moor" },
+    "CHE": { "name": "Chelsea",        "code": 8,   "p": "#034694", "s": "#DBA111", "t": "#FFFFFF", "nick": "The Blues",      "stadium": "Stamford Bridge" },
+    "CRY": { "name": "Crystal Palace", "code": 31,  "p": "#1B458F", "s": "#C4122E", "t": "#FFFFFF", "nick": "The Eagles",     "stadium": "Selhurst Park" },
+    "EVE": { "name": "Everton",        "code": 11,  "p": "#003399", "s": "#FFFFFF", "t": "#FFFFFF", "nick": "The Toffees",    "stadium": "Everton Stadium" },
+    "FUL": { "name": "Fulham",         "code": 54,  "p": "#111111", "s": "#CC0000", "t": "#FFFFFF", "nick": "The Cottagers",  "stadium": "Craven Cottage" },
+    "LEE": { "name": "Leeds",          "code": 2,   "p": "#1D428A", "s": "#FFCD00", "t": "#FFFFFF", "nick": "The Whites",     "stadium": "Elland Road" },
+    "LIV": { "name": "Liverpool",      "code": 14,  "p": "#C8102E", "s": "#00B2A9", "t": "#FFFFFF", "nick": "The Reds",       "stadium": "Anfield" },
+    "MCI": { "name": "Man City",       "code": 43,  "p": "#6CABDD", "s": "#1C2C5B", "t": "#0D2B4E", "nick": "The Citizens",   "stadium": "Etihad Stadium" },
+    "MUN": { "name": "Man Utd",        "code": 1,   "p": "#DA291C", "s": "#FBE122", "t": "#FFFFFF", "nick": "The Red Devils", "stadium": "Old Trafford" },
+    "NEW": { "name": "Newcastle",      "code": 4,   "p": "#241F20", "s": "#FFFFFF", "t": "#FFFFFF", "nick": "The Magpies",    "stadium": "St James' Park" },
+    "NFO": { "name": "Nott'm Forest",  "code": 17,  "p": "#DD0000", "s": "#FFFFFF", "t": "#FFFFFF", "nick": "The Tricky Trees", "stadium": "The City Ground" },
+    "SUN": { "name": "Sunderland",     "code": 56,  "p": "#EB172B", "s": "#FFFFFF", "t": "#FFFFFF", "nick": "The Black Cats", "stadium": "Stadium of Light" },
+    "TOT": { "name": "Spurs",          "code": 6,   "p": "#132257", "s": "#FFFFFF", "t": "#FFFFFF", "nick": "Spurs",          "stadium": "Tottenham Hotspur Stadium" },
+    "WHU": { "name": "West Ham",       "code": 21,  "p": "#7A263A", "s": "#1BB1E7", "t": "#FFFFFF", "nick": "The Hammers",    "stadium": "London Stadium" },
+    "WOL": { "name": "Wolves",         "code": 39,  "p": "#FDB913", "s": "#231F20", "t": "#231F20", "nick": "Wolves",         "stadium": "Molineux Stadium" }
+  }
+}
