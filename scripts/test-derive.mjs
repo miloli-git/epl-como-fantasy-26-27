@@ -4,6 +4,7 @@ import { buildConfig } from "../lib/config-core.mjs";
 import {
   deriveManager,
   deriveManagers,
+  displayNames,
   gradingTertiles,
   isEligible,
   poolCounts,
@@ -253,6 +254,67 @@ function ownedRows(managerId, count, total, positions) {
   eq("verdict: steal", saleVerdict(cfg, 100, 300), { delta: -200, pctOver: -200 / 300, verdict: "STEAL" });
   eq("verdict: fair within band", saleVerdict(cfg, 150, 120), { delta: 30, pctOver: 30 / 120, verdict: "FAIR" });
   eq("verdict: no valuation -> nulls", saleVerdict(cfg, 150, null), { delta: null, pctOver: null, verdict: null });
+}
+
+// --- displayNames: unique on-screen labels (#44) ---
+{
+  // A unique surname passes through untouched; a shared one is qualified by
+  // club. Accented names are preserved byte-for-byte.
+  const rows = [
+    { id: 1, webName: "Wilson", teamShort: "FUL" },
+    { id: 2, webName: "Wilson", teamShort: "TOT" },
+    { id: 3, webName: "Wilson", teamShort: "WHU" },
+    { id: 4, webName: "Saka", teamShort: "ARS" },
+    { id: 5, webName: "Højlund", teamShort: "MUN" },
+  ];
+  const dn = displayNames(rows);
+  eq("displayNames: unique surname untouched", dn.get(4), "Saka");
+  eq("displayNames: accented unique name preserved", dn.get(5), "Højlund");
+  eq("displayNames: shared surname qualified by club", [dn.get(1), dn.get(2), dn.get(3)], [
+    "Wilson (FUL)",
+    "Wilson (TOT)",
+    "Wilson (WHU)",
+  ]);
+  const all = [...dn.values()];
+  eq("displayNames: every label unique", new Set(all).size, all.length);
+}
+
+// displayNames: order-independent - shuffling the input gives the same labels.
+{
+  const a = displayNames([
+    { id: 1, webName: "Gray", teamShort: "LEE" },
+    { id: 2, webName: "Gray", teamShort: "MCI" },
+  ]);
+  const b = displayNames([
+    { id: 2, webName: "Gray", teamShort: "MCI" },
+    { id: 1, webName: "Gray", teamShort: "LEE" },
+  ]);
+  eq("displayNames: order-independent labels", [a.get(1), a.get(2)], [b.get(1), b.get(2)]);
+}
+
+// displayNames: same name AND same club falls back to a stable ordinal by id,
+// so the rendered label is still unique (never a bare duplicate).
+{
+  const dn = displayNames([
+    { id: 20, webName: "Reed", teamShort: "AVL" },
+    { id: 10, webName: "Reed", teamShort: "AVL" },
+  ]);
+  eq("displayNames: same name+club -> stable ordinal by id", [dn.get(10), dn.get(20)], [
+    "Reed (AVL 1)",
+    "Reed (AVL 2)",
+  ]);
+}
+
+// displayNames: a null club still yields a unique, non-throwing label.
+{
+  const dn = displayNames([
+    { id: 1, webName: "Ghost", teamShort: null },
+    { id: 2, webName: "Ghost", teamShort: "SUN" },
+  ]);
+  eq("displayNames: null club falls back to '?' marker", [dn.get(1), dn.get(2)], [
+    "Ghost (?)",
+    "Ghost (SUN)",
+  ]);
 }
 
 process.exit(failed ? 1 : 0);

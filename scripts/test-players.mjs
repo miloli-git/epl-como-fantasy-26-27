@@ -44,13 +44,23 @@ const TRADED_ID = 999913;
 // (simulating the last-line-of-defense scenario the read layer guards against -
 // blocked upstream at the write layer today, but exercised here as a regression).
 const DANGLE_ID = 999914;
+// #44 display-name fixtures: two players share a web_name at different clubs
+// (must disambiguate to "web_name (CLUB)"), plus an accented unique name (must
+// pass through untouched).
+const DUP_A_ID = 999915;
+const DUP_B_ID = 999916;
+const ACCENT_ID = 999917;
+const DUP_NAME = "Zztestson"; // outside the real pool, so it only ever pairs here
+const DUP_A_TEAM = "AAA";
+const DUP_B_TEAM = "BBB";
+const ACCENT_NAME = "Højlundson"; // accented + unique
 const UNSOLD_VALUE = 987654; // distinctive: must appear NOWHERE in the payload
 const DANGLE_VALUE = 876543; // distinctive: also must appear NOWHERE
 const SOLD_VALUE = 500;
 const TRADED_VALUE = 300;
 const SALE_PRICE_SOLD = 601;
 const SALE_PRICE_TRADED = 250;
-const IDS = [UNSOLD_ID, SOLD_ID, TRADED_ID, DANGLE_ID];
+const IDS = [UNSOLD_ID, SOLD_ID, TRADED_ID, DANGLE_ID, DUP_A_ID, DUP_B_ID, ACCENT_ID];
 
 let failed = false;
 function report(name, ok, detail = "") {
@@ -103,7 +113,10 @@ try {
     values (${UNSOLD_ID}, ${UNSOLD_ID}, 'Test Unsold', 'TST', 1, 'MID', 9.5, 2, 111),
            (${SOLD_ID},   ${SOLD_ID},   'Test Sold',   'TST', 1, 'FWD', 12.5, 1, 222),
            (${TRADED_ID}, ${TRADED_ID}, 'Test Traded', 'TST', 1, 'DEF', 7.5, 3, 88),
-           (${DANGLE_ID}, ${DANGLE_ID}, 'Test Dangle', 'TST', 1, 'MID', 8.0, 2, 50)
+           (${DANGLE_ID}, ${DANGLE_ID}, 'Test Dangle', 'TST', 1, 'MID', 8.0, 2, 50),
+           (${DUP_A_ID},  ${DUP_A_ID},  ${DUP_NAME}, ${DUP_A_TEAM}, 1, 'DEF', 5.0, 4, 40),
+           (${DUP_B_ID},  ${DUP_B_ID},  ${DUP_NAME}, ${DUP_B_TEAM}, 1, 'MID', 5.0, 4, 30),
+           (${ACCENT_ID}, ${ACCENT_ID}, ${ACCENT_NAME}, 'ACC', 1, 'FWD', 6.0, 4, 20)
   `;
   // Valuations for ALL FOUR - only the sold/traded ones may ever surface.
   await sql`
@@ -261,6 +274,47 @@ try {
     }
   }
   report("every sold player appears in exactly its owner's squad", ownershipOk);
+
+  // (i) #44 DISPLAY NAMES: no two players share a rendered display name across
+  //     the WHOLE payload - the guarantee that the room can never see the same
+  //     nameplate twice and record a bid against the wrong player.
+  const displaySeen = new Map();
+  let dupDisplay = "";
+  for (const p of payload.players) {
+    const dn = p.displayName;
+    if (dn == null) {
+      dupDisplay = `player ${p.id} has null displayName`;
+      break;
+    }
+    if (displaySeen.has(dn)) {
+      dupDisplay = `"${dn}" shared by ${displaySeen.get(dn)} and ${p.id}`;
+      break;
+    }
+    displaySeen.set(dn, p.id);
+  }
+  report("no two players share a rendered display name (whole payload)", dupDisplay === "", dupDisplay);
+
+  // (j) the shared-web_name pair disambiguates to "web_name (CLUB)", and the
+  //     raw web_name is still carried untouched on `name`.
+  const da = byId.get(DUP_A_ID);
+  const db = byId.get(DUP_B_ID);
+  report(
+    "duplicate web_name pair disambiguates by club, raw web_name preserved",
+    da && db &&
+      da.displayName === `${DUP_NAME} (${DUP_A_TEAM})` &&
+      db.displayName === `${DUP_NAME} (${DUP_B_TEAM})` &&
+      da.name === DUP_NAME && db.name === DUP_NAME,
+    da && db ? `a="${da.displayName}" b="${db.displayName}"` : "missing",
+  );
+
+  // (k) a UNIQUE, accented name is untouched: displayName === raw web_name, and
+  //     the accented characters survive intact (no mojibake, no club suffix).
+  const acc = byId.get(ACCENT_ID);
+  report(
+    "unique accented name passes through unchanged (no club suffix, no mojibake)",
+    acc && acc.displayName === ACCENT_NAME && acc.name === ACCENT_NAME,
+    acc ? `displayName="${acc.displayName}"` : "missing",
+  );
 } catch (err) {
   console.error("test-players failed to run:", err.message);
   failed = true;

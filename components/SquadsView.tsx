@@ -71,7 +71,7 @@ function ManagerCell({ m, byId }: { m: PlayersManager; byId: Map<number, PlayerR
       {top.map((p) => (
         <div className="pr" key={p.id}>
           <span className="cdot" style={{ background: clubDot(p.teamShort) }} />
-          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name ?? "?"}</span>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.displayName ?? p.name ?? "?"}</span>
           <span className="tn">T{p.tier ?? "?"}</span>
           <span className="p" style={{ color: priceColorVar(p.verdict) }}>{money(p.price)}</span>
         </div>
@@ -106,7 +106,7 @@ function PhoneManagerCard({ m, byId, squadSize }: { m: PlayersManager; byId: Map
         {owned.map((p) => (
           <div className="ph-prow" key={p.id}>
             <span className="ph-dot" style={{ background: clubDot(p.teamShort) }} />
-            <span className="ph-pname">{p.name ?? "?"}</span>
+            <span className="ph-pname">{p.displayName ?? p.name ?? "?"}</span>
             <span className="chip ph-chip">{p.position} T{p.tier ?? "?"}</span>
             <span className="ph-price">{money(p.price)}</span>
           </div>

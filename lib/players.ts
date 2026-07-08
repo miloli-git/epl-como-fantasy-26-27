@@ -13,7 +13,10 @@ export interface PlayerRow {
   id: number;
   /** FPL photo code for the face thumbnail (null if unknown). */
   code: number | null;
+  /** Raw FPL web_name. */
   name: string | null;
+  /** Unique on-screen label (#44): web_name, or "web_name (CLUB)" when shared. */
+  displayName: string | null;
   teamShort: string | null;
   /** Badge code for the club crest (null if unknown). */
   teamCode: number | null;

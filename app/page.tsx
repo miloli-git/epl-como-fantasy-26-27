@@ -173,7 +173,7 @@ function PhoneBoard({ payload, connected }: { payload: StatePayload | null; conn
           <div className="ph-card ph-lotcard">
             {lot ? (
               <>
-                <div className="ph-lotname" data-testid="lot-name">{lot.name}</div>
+                <div className="ph-lotname" data-testid="lot-name">{lot.displayName}</div>
                 <div className="ph-lotmeta">
                   {lot.teamShort ?? "?"} / {lot.position} / T{lot.tier ?? "?"} / opens {money(lot.openBid)}
                 </div>
@@ -188,7 +188,7 @@ function PhoneBoard({ payload, connected }: { payload: StatePayload | null; conn
             {sales.length === 0 && <div className="ph-loading">no sales yet</div>}
             {sales.map((s) => (
               <div className="ph-card ph-soldrow" key={s.playerId}>
-                <span className="ph-pname">{s.playerName}</span>
+                <span className="ph-pname">{s.displayName}</span>
                 <span className="ph-pm">&rarr; {abbr(s.managerShort)}</span>
                 <span className="ph-pp">
                   {money(s.price)}
@@ -358,13 +358,13 @@ export default function Board() {
                     <img
                       src={lot.code != null ? `/assets/players/250/p${lot.code}.png` : SILHOUETTE}
                       data-cdn={lot.code != null ? `${PL}/photos/players/250x250/p${lot.code}.png` : undefined}
-                      alt={lot.name}
+                      alt={lot.displayName}
                       onError={photoErr}
                     />
                     <div className="b-plate">
-                      <div className="name" data-testid="lot-name">{lot.name}</div>
+                      <div className="name" data-testid="lot-name">{lot.displayName}</div>
                       <div className="sub">
-                        {[lot.firstName, lot.secondName].filter(Boolean).join(" ") || lot.name} · {wash?.name ?? lot.teamShort}
+                        {[lot.firstName, lot.secondName].filter(Boolean).join(" ") || lot.displayName} · {wash?.name ?? lot.teamShort}
                       </div>
                     </div>
                   </div>
@@ -434,7 +434,7 @@ export default function Board() {
                         alt=""
                         onError={photoErr}
                       />
-                      <span className="pn">{s.playerName}</span>
+                      <span className="pn">{s.displayName}</span>
                       <span className="pm">&rarr; {abbr(s.managerShort)}</span>
                       <span className="pp">
                         {money(s.price)}
@@ -475,7 +475,7 @@ export default function Board() {
                     <li key={t.tradeId} className="sold-row">
                       <span className="pn">{abbr(t.managerAShort)} &harr; {abbr(t.managerBShort)}</span>
                       <span className="pm">
-                        {t.players.map((p) => `${p.name ?? "#" + p.playerId} ${abbr(p.fromShort)}->${abbr(p.toShort)}`).join(", ")}
+                        {t.players.map((p) => `${p.displayName ?? p.name ?? "#" + p.playerId} ${abbr(p.fromShort)}->${abbr(p.toShort)}`).join(", ")}
                         {(t.cashAToB > 0 || t.cashBToA > 0) && ` · $${(t.cashAToB || t.cashBToA).toLocaleString()}`}
                       </span>
                     </li>
@@ -518,7 +518,7 @@ export default function Board() {
             {/* reveal takeover */}
             {reveal && (
               <div className="b-reveal" data-testid="reveal">
-                <div className="rp">{reveal.playerName} &rarr; {abbr(reveal.managerShort)}</div>
+                <div className="rp">{reveal.displayName} &rarr; {abbr(reveal.managerShort)}</div>
                 <div className="rprice">Paid {money(reveal.price)}</div>
                 <div className="rseal">Claude value {reveal.value == null ? "pending" : money(reveal.value)}</div>
                 {reveal.verdict && (

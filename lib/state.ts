@@ -12,7 +12,10 @@ import { buildStatePayload as buildStatePayloadCore } from "./state-core.mjs";
 export interface CurrentLot {
   id: number;
   code: number | null;
+  /** Raw FPL web_name. */
   name: string;
+  /** Unique on-screen label (#44): web_name, or "web_name (CLUB)" when shared. */
+  displayName: string;
   firstName: string | null;
   secondName: string | null;
   teamId: number | null;
@@ -50,6 +53,8 @@ export interface CurrentLot {
 export interface SquadEntry {
   playerId: number;
   name: string;
+  /** Unique on-screen label (#44). */
+  displayName: string | null;
   position: Position;
   tier: number | null;
   price: number;
@@ -74,6 +79,8 @@ export interface RecentSale {
   saleId: number;
   playerId: number;
   playerName: string;
+  /** Unique on-screen label (#44). */
+  displayName: string;
   /** FPL photo code for the sold-rail face thumbnail (null if unknown). */
   code: number | null;
   position: Position;
@@ -92,6 +99,8 @@ export interface Reveal {
   saleId: number;
   playerId: number;
   playerName: string;
+  /** Unique on-screen label (#44). */
+  displayName: string;
   managerShort: string | null;
   price: number;
   value: number | null;
@@ -104,12 +113,16 @@ export interface Reveal {
 export interface UpNextEntry {
   id: number;
   name: string;
+  /** Unique on-screen label (#44). */
+  displayName: string;
   tier: number | null;
 }
 
 export interface TradePlayerLeg {
   playerId: number;
   name: string | null;
+  /** Unique on-screen label (#44). */
+  displayName: string | null;
   fromShort: string | null;
   toShort: string | null;
 }

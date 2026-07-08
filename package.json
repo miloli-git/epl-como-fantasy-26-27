@@ -15,6 +15,7 @@
     "assets": "node scripts/cache-assets.mjs",
     "test:derive": "node scripts/test-derive.mjs",
     "test:club": "node scripts/test-club.mjs",
+    "test:players": "node --env-file=.env scripts/test-players.mjs",
     "test:state": "node --env-file=.env scripts/test-state.mjs",
     "test:draft": "node --env-file=.env scripts/test-draft.mjs",
     "test:draft-concurrency": "node --env-file=.env scripts/test-draft-concurrency.mjs",

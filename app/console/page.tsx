@@ -378,7 +378,7 @@ export default function Console() {
           {lot ? (
             <div className="con-lotline">
               <span className="nm" data-testid="lot-name">
-                {lot.name}
+                {lot.displayName}
               </span>
               <span className="chip">
                 T{lot.tier ?? "?"} - opens {money(lot.openBid)}
@@ -515,7 +515,7 @@ export default function Console() {
                             checked={tradePlayersAToB.includes(p.playerId)}
                             onChange={() => toggleTradePlayer("a", p.playerId)}
                           />
-                          {p.name} ({p.position}) {money(p.price)}
+                          {p.displayName ?? p.name} ({p.position}) {money(p.price)}
                         </label>
                       ))
                     )}
@@ -564,7 +564,7 @@ export default function Console() {
                             checked={tradePlayersBToA.includes(p.playerId)}
                             onChange={() => toggleTradePlayer("b", p.playerId)}
                           />
-                          {p.name} ({p.position}) {money(p.price)}
+                          {p.displayName ?? p.name} ({p.position}) {money(p.price)}
                         </label>
                       ))
                     )}
@@ -649,7 +649,7 @@ export default function Console() {
               {(payload?.upNext ?? []).length === 0 && <li className="con-qrow">queue empty</li>}
               {(payload?.upNext ?? []).map((u) => (
                 <li key={u.id} className="con-qrow">
-                  {u.name} (T{u.tier ?? "?"})
+                  {u.displayName} (T{u.tier ?? "?"})
                 </li>
               ))}
             </ol>
