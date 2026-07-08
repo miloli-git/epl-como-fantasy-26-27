@@ -7,8 +7,8 @@
 // reads `value` for a row where sold is false).
 
 import type { CSSProperties } from "react";
-import type { PlayerRow } from "@/lib/players";
-import { PL, SILHOUETTE, abbr, clubDot, money, photoErr, useBoardScale, usePolledPlayers } from "./tv-common";
+import type { PlayerRow, PlayersPayload } from "@/lib/players";
+import { PL, SILHOUETTE, abbr, clubDot, money, photoErr, useBoardScale, useIsPhone, usePolledPlayers } from "./tv-common";
 
 /** Sold rows first (highest paid first), then unsold rows by last season's points. */
 function ledgerSort(a: PlayerRow, b: PlayerRow): number {
@@ -72,9 +72,61 @@ function Row({ p }: { p: PlayerRow }) {
   );
 }
 
+// ---- Phone layout (plain reflowing HTML, not the scaled TV canvas) --------
+
+function PhoneLedgerRow({ p }: { p: PlayerRow }) {
+  return (
+    <div className="ph-card ph-ledger-row" data-testid={`ph-ledger-${p.id}`}>
+      <div className="ph-ledger-left">
+        <span className="ph-dot" style={{ background: clubDot(p.teamShort) }} />
+        <div style={{ minWidth: 0 }}>
+          <div className="ph-ledger-name">{p.name ?? "?"}</div>
+          <div className="ph-sub">
+            {p.teamShort ?? "?"} / {p.position} / T{p.tier ?? "?"}
+            {p.ownerShort ? ` · ${abbr(p.ownerShort)}` : ""}
+          </div>
+        </div>
+      </div>
+      <div className="ph-ledger-right">
+        <div className="ph-money-big">{money(p.price)}</div>
+        {p.value != null && p.verdict && (
+          <span className={`pill ${verdictPillClass(p.verdict)} ph-vpill`}>
+            {p.verdict}{p.delta != null ? ` ${money(Math.abs(p.delta))}` : ""}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PhoneLedger({ payload, connected }: { payload: PlayersPayload | null; connected: boolean }) {
+  const ready = payload !== null;
+  const rows = payload ? payload.players.filter((p) => p.sold).sort((a, b) => (b.price ?? 0) - (a.price ?? 0)) : [];
+
+  return (
+    <div className="ph-screen" data-testid="ledger-page">
+      <div className="ph-header">
+        <span className="ph-eyebrow">THE LEDGER</span>
+        <span className="ph-headmeta">SORTED BY PAID</span>
+      </div>
+      {!ready ? (
+        <div className="ph-loading">{connected ? "connecting..." : "connection lost - retrying"}</div>
+      ) : (
+        <div className="ph-stack">
+          {rows.map((p) => (
+            <PhoneLedgerRow key={p.id} p={p} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function LedgerView() {
   const { payload, connected } = usePolledPlayers();
   const { ref, scale } = useBoardScale();
+  const isPhone = useIsPhone();
+  if (isPhone) return <PhoneLedger payload={payload} connected={connected} />;
   const ready = payload !== null && scale > 0;
 
   const rows = payload ? [...payload.players].sort(ledgerSort) : [];

@@ -7,8 +7,8 @@
 
 import type { CSSProperties } from "react";
 import type { Position } from "@/lib/config";
-import type { PlayerRow, PlayersManager } from "@/lib/players";
-import { abbr, clubDot, money, useBoardScale, usePolledPlayers } from "./tv-common";
+import type { PlayerRow, PlayersManager, PlayersPayload } from "@/lib/players";
+import { abbr, clubDot, money, useBoardScale, useIsPhone, usePolledPlayers } from "./tv-common";
 
 const POSITIONS: Position[] = ["GK", "DEF", "MID", "FWD"];
 const POS_LETTER: Record<Position, string> = { GK: "G", DEF: "D", MID: "M", FWD: "F" };
@@ -85,9 +85,69 @@ function ManagerCell({ m, byId }: { m: PlayersManager; byId: Map<number, PlayerR
   );
 }
 
+// ---- Phone layout (plain reflowing HTML, not the scaled TV canvas) --------
+
+function PhoneManagerCard({ m, byId, squadSize }: { m: PlayersManager; byId: Map<number, PlayerRow>; squadSize: number }) {
+  const owned = m.squadPlayerIds.map((id) => byId.get(id)).filter((p): p is PlayerRow => p != null);
+  return (
+    <div className="ph-card" data-testid={`ph-squad-${m.slot}`}>
+      <div className="ph-row1">
+        <span className="ph-mgr">{abbr(m.short)}</span>
+        <span className="ph-money-big">{money(m.remaining)}</span>
+      </div>
+      <div className="ph-row2">
+        <span>spent {money(m.spent)}</span>
+        <span>{owned.length}/{squadSize}</span>
+        {m.claudeValue != null && (
+          <span className={`pill ${deltaPillClass(m.claudeDelta)}`}>{deltaLabel(m.claudeDelta)}</span>
+        )}
+      </div>
+      <div className="ph-players">
+        {owned.map((p) => (
+          <div className="ph-prow" key={p.id}>
+            <span className="ph-dot" style={{ background: clubDot(p.teamShort) }} />
+            <span className="ph-pname">{p.name ?? "?"}</span>
+            <span className="chip ph-chip">{p.position} T{p.tier ?? "?"}</span>
+            <span className="ph-price">{money(p.price)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PhoneSquads({ payload, connected }: { payload: PlayersPayload | null; connected: boolean }) {
+  const ready = payload !== null;
+  const byId = new Map<number, PlayerRow>(payload ? payload.players.map((p) => [p.id, p]) : []);
+  const totalManagers = payload?.managers.length ?? 0;
+  const completeManagers = payload ? payload.managers.filter((m) => m.squadComplete).length : 0;
+  const squadSize = payload ? Object.values(payload.squad).reduce((a, b) => a + b, 0) : 0;
+  const managers = payload ? [...payload.managers].sort((a, b) => a.slot - b.slot) : [];
+
+  return (
+    <div className="ph-screen" data-testid="squads-page">
+      <div className="ph-header">
+        <span className="ph-eyebrow">THE ROOM / SQUADS</span>
+        <span className="ph-headmeta">{ready ? `${completeManagers}/${totalManagers} COMPLETE` : ""}</span>
+      </div>
+      {!ready ? (
+        <div className="ph-loading">{connected ? "connecting..." : "connection lost - retrying"}</div>
+      ) : (
+        <div className="ph-stack">
+          {managers.map((m) => (
+            <PhoneManagerCard key={m.slot} m={m} byId={byId} squadSize={squadSize} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SquadsView() {
   const { payload, connected } = usePolledPlayers();
   const { ref, scale } = useBoardScale();
+  const isPhone = useIsPhone();
+  if (isPhone) return <PhoneSquads payload={payload} connected={connected} />;
   const ready = payload !== null && scale > 0;
 
   const byId = new Map<number, PlayerRow>(payload ? payload.players.map((p) => [p.id, p]) : []);

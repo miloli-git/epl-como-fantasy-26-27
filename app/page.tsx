@@ -15,6 +15,7 @@ import clubColors from "@/lib/club-colors.json";
 import { washForClub } from "@/lib/club-core.mjs";
 import SquadsView from "@/components/SquadsView";
 import LedgerView from "@/components/LedgerView";
+import { useIsPhone } from "@/components/tv-common";
 
 const POSITIONS = ["GK", "DEF", "MID", "FWD"] as const;
 type Pos = (typeof POSITIONS)[number];
@@ -144,9 +145,79 @@ function verdictPill(v: string | null): string {
   return v === "STEAL" ? "up" : v === "OVERPAY" ? "down" : "flat";
 }
 
+// ---- Phone layout: a calm "what's happening now" glance, not a shrunk TV
+// canvas. Always shows the live auction status regardless of tvView (squads/
+// ledger/reveal/paused are TV-only concerns on a phone). ----------------
+
+function PhoneBoard({ payload, connected }: { payload: StatePayload | null; connected: boolean }) {
+  const lot = payload?.currentLot ?? null;
+  const sales = payload ? payload.recentSales.slice(0, 5) : [];
+  const managers = payload ? [...payload.managers].sort((a, b) => a.slot - b.slot) : [];
+
+  return (
+    <div className="ph-screen" data-testid="board-page">
+      <div className="ph-status">
+        <span className="ph-eyebrow">ON THE BLOCK{lot?.lotNo != null ? ` · LOT ${lot.lotNo}` : ""}</span>
+        <span className={`ph-dotstat ${connected ? "on" : "off"}`} data-testid="poll-status">
+          <span className="ph-livedot" />
+          {connected ? "live" : "connection lost - retrying"}
+        </span>
+        <span className="ph-headmeta" data-testid="phase">PHASE {payload?.phase ?? "?"}</span>
+        {payload?.paused && <span className="ph-headmeta" data-testid="paused">PAUSED</span>}
+      </div>
+
+      {!payload ? (
+        <div className="ph-loading">loading the room...</div>
+      ) : (
+        <>
+          <div className="ph-card ph-lotcard">
+            {lot ? (
+              <>
+                <div className="ph-lotname" data-testid="lot-name">{lot.name}</div>
+                <div className="ph-lotmeta">
+                  {lot.teamShort ?? "?"} / {lot.position} / T{lot.tier ?? "?"} / opens {money(lot.openBid)}
+                </div>
+              </>
+            ) : (
+              <div className="ph-lotmeta" data-testid="lot-empty">No lot on the block.</div>
+            )}
+          </div>
+
+          <div className="ph-sechead">Recently sold</div>
+          <div className="ph-stack" data-testid="recent-sales">
+            {sales.length === 0 && <div className="ph-loading">no sales yet</div>}
+            {sales.map((s) => (
+              <div className="ph-card ph-soldrow" key={s.playerId}>
+                <span className="ph-pname">{s.playerName}</span>
+                <span className="ph-pm">&rarr; {abbr(s.managerShort)}</span>
+                <span className="ph-pp">
+                  {money(s.price)}
+                  {s.verdict && <span className={`pill ${verdictPill(s.verdict)}`} style={{ marginLeft: 8 }}>{s.verdict}</span>}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="ph-sechead">Budgets</div>
+          <div className="ph-budgrid">
+            {managers.map((m) => (
+              <div className="ph-budcell" key={m.slot} data-testid={`manager-${m.slot}`}>
+                <span className="c">{abbr(m.short)}</span>
+                <span className="m">{money(m.remaining)}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function Board() {
   const { payload, connected } = usePolledState();
   const { ref, scale } = useBoardScale();
+  const isPhone = useIsPhone();
+  if (isPhone) return <PhoneBoard payload={payload} connected={connected} />;
 
   // Alternate room-facing screens hand off entirely once tv.set flips tvView -
   // squads/ledger run their own poll + scale, so they need nothing from here.

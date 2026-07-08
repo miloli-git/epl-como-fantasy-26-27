@@ -63,6 +63,25 @@ export function useBoardScale() {
   return { ref, scale };
 }
 
+/**
+ * True on a phone-width viewport, false everywhere else (including during SSR
+ * and the first client render, so there is no hydration mismatch). Mounted-
+ * gated: only reads matchMedia after mount, then subscribes to changes.
+ */
+export function useIsPhone(): boolean {
+  const [isPhone, setIsPhone] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 640px)");
+    setIsPhone(mql.matches);
+    function onChange(e: MediaQueryListEvent) {
+      setIsPhone(e.matches);
+    }
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+  return isPhone;
+}
+
 /** Poll /api/players (version-gated, keeps the last good payload on a blip). */
 export function usePolledPlayers(): { payload: PlayersPayload | null; connected: boolean } {
   const [payload, setPayload] = useState<PlayersPayload | null>(null);
