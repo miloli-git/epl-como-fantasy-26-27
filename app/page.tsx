@@ -92,7 +92,7 @@ export default function Board() {
     : [];
 
   return (
-    <main data-testid="board-page" style={{ fontFamily: "monospace", padding: 16 }}>
+    <main data-testid="board-page" className="screen board">
       <h1>On the block</h1>
       <p>
         <span data-testid="phase">phase {payload?.phase ?? "?"}</span>
@@ -112,18 +112,34 @@ export default function Board() {
         <>
           {/* ---- reveal takeover ---- */}
           {payload.tvView === "reveal" && payload.reveal && (
-            <section data-testid="reveal" style={{ border: "3px solid black", padding: 8 }}>
-              <h2>
-                {payload.reveal.playerName} {"->"} {payload.reveal.managerShort ?? "?"}
-              </h2>
+            <section data-testid="reveal" className="reveal">
+              <h2>Sold</h2>
+              <p className="paid">
+                {payload.reveal.playerName} {"->"} {payload.reveal.managerShort ?? "?"} ·{" "}
+                {money(payload.reveal.price)}
+              </p>
               <p>
-                paid {money(payload.reveal.price)}
-                {" | value "}
-                {payload.reveal.value == null ? "value pending" : money(payload.reveal.value)}
-                {" | delta "}
-                {payload.reveal.delta == null ? "value pending" : money(payload.reveal.delta)}
-                {" | "}
-                {payload.reveal.verdict ?? "value pending"}
+                <span className="sealed">
+                  Claude value{" "}
+                  {payload.reveal.value == null ? "pending" : money(payload.reveal.value)}
+                </span>
+                {payload.reveal.verdict && (
+                  <>
+                    {"  "}
+                    <span
+                      className={`pill ${
+                        payload.reveal.verdict === "STEAL"
+                          ? "up"
+                          : payload.reveal.verdict === "OVERPAY"
+                            ? "down"
+                            : "flat"
+                      }`}
+                    >
+                      {payload.reveal.verdict}
+                      {payload.reveal.delta != null ? ` ${money(payload.reveal.delta)}` : ""}
+                    </span>
+                  </>
+                )}
               </p>
             </section>
           )}
@@ -133,10 +149,16 @@ export default function Board() {
             <h2>Current lot</h2>
             {lot ? (
               <p>
-                <strong data-testid="lot-name">{lot.name}</strong>
-                {" | "}
-                {lot.position} | {lot.teamShort ?? "?"} | tier {lot.tier ?? "?"} | opens{" "}
-                {money(lot.openBid)} | FPL {lot.fplPrice ?? "?"} | {lot.stats.pts ?? "?"} pts
+                <strong data-testid="lot-name" style={{ fontSize: 22 }}>{lot.name}</strong>
+                {"  "}
+                <span className="chip">{lot.position}</span>{" "}
+                <span className="chip">{lot.teamShort ?? "?"}</span>{" "}
+                <span className="chip">Tier {lot.tier ?? "?"}</span>{" "}
+                <span className="sealed">opens {money(lot.openBid)}</span>
+                {"  "}
+                <span style={{ color: "var(--muted)" }}>
+                  FPL {lot.fplPrice ?? "?"} · {lot.stats.pts ?? "?"} pts
+                </span>
               </p>
             ) : (
               <p data-testid="lot-empty">No lot on the block.</p>
@@ -146,28 +168,23 @@ export default function Board() {
           {/* ---- manager strip ---- */}
           <section>
             <h2>Managers</h2>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <div className="strip">
               {payload.managers.map((m) => {
                 const size = m.squad.length + m.openSlots;
                 return (
                   <div
                     key={m.slot}
                     data-testid={`manager-${m.slot}`}
-                    style={{ border: "1px solid black", padding: 6 }}
+                    className={`mgr${m.squadComplete ? " complete" : ""}`}
                   >
-                    <div>
-                      <strong>{m.short}</strong> {money(m.remaining)} left
+                    <div className="name">{m.short}</div>
+                    <div>{money(m.remaining)} left</div>
+                    <div style={{ color: "var(--muted)", fontSize: 13 }}>
+                      {m.squadComplete ? `${m.squad.length}/${size}` : `max ${money(m.maxBid)}`}
                     </div>
-                    <div>
-                      {m.squadComplete
-                        ? `${m.squad.length}/${size}`
-                        : `max ${money(m.maxBid)}`}
-                    </div>
-                    {/* Fills; the current lot's position is marked [X n]. The
-                        marker (and card) grey out when the squad is complete.
-                        NOTE: per-position quota denominators (e.g. "D 4/5")
-                        are not in the state payload - counts only here. */}
-                    <div style={m.squadComplete ? { color: "#999" } : undefined}>
+                    {/* Fills; the current lot's position is marked [X n].
+                        Per-position quota denominators are not in the payload. */}
+                    <div className="fills">
                       {POSITIONS.map((p) => {
                         const label = `${p[0]} ${m.fills[p]}`;
                         return (

@@ -1,0 +1,239 @@
+/* Como 26/27 visual system - FIRST PASS (light "Daylight hybrid").
+   Token layer per handoff/03-DESIGN-SYSTEM.md. Room-facing surfaces use the
+   light system (:root); the console uses the .console dark scope override -
+   same components, one skin swap. This is a first pass for live review, not
+   the full mockup fidelity (no club-wash / player photos / 1600x900 board
+   grid yet); all colour lives in CSS variables so the board light-vs-dark
+   call stays a one-set swap. Fonts come from next/font (self-hosted). */
+
+:root {
+  --ground: #F4F5F1;      /* warm chalk - page ground */
+  --card: #FFFFFF;        /* cells and cards */
+  --ink: #1C2420;         /* primary text */
+  --muted: #6B7268;       /* labels, secondary */
+  --hair: #E3E6DF;        /* internal hairlines */
+  --bronze: #8F6B24;      /* punctuation: eyebrow, sealed value */
+  --vg: #1B7A45;          /* value good */
+  --vb: #B3402E;          /* value bad / overpay */
+  --vf: #8A6D1C;          /* value flat / fair */
+  --up: rgba(16, 185, 120, 0.13);
+  --down: rgba(223, 74, 50, 0.12);
+  --flat: rgba(217, 154, 27, 0.14);
+  --chip: #EEF0EB;        /* neutral tier / structure chip */
+  --btn-ink: #1C2420;     /* primary button fill */
+  --btn-ink-text: #FFFFFF;
+  --shadow-sm: 0 1px 2px rgba(50, 50, 93, 0.06), 0 1px 1px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 5px -1px rgba(50, 50, 93, 0.12), 0 1px 3px -1px rgba(0, 0, 0, 0.1);
+  --radius: 10px;
+  --pill: 999px;
+}
+
+/* Console operator skin: charcoal + brass, so the auctioneer's screen is not
+   a floodlight in the dim room. Same component rules, different tokens. */
+.console {
+  --ground: #141715;
+  --card: #232725;
+  --ink: #DDD9CE;
+  --muted: #96938A;
+  --hair: #2B2F2D;
+  --bronze: #C9A44C;      /* brass replaces bronze */
+  --chip: #2B2F2D;
+  --btn-ink: #C9A44C;     /* the hammer: brass primary */
+  --btn-ink-text: #141715;
+  --shadow-sm: none;
+  --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* tabular numerals everywhere money/points appear */
+.screen { font-variant-numeric: tabular-nums; }
+
+.screen {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 28px 24px 64px;
+}
+
+.console.screen { max-width: 100%; padding: 20px 22px 48px; }
+
+/* Display type: light Hanken Grotesk, never bold above 20px (the defining move) */
+.screen h1 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  font-size: clamp(34px, 5vw, 52px);
+  line-height: 1.04;
+  margin: 0 0 4px;
+}
+
+.screen h2 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+/* Top status line under the title */
+.screen > p:first-of-type,
+.statusline {
+  color: var(--muted);
+  font-size: 13.5px;
+  margin: 0 0 22px;
+}
+
+/* Sections render as floating cards (no borders; elevation via shadow) */
+.screen section {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: 18px 20px;
+  margin: 0 0 16px;
+}
+
+.screen a { color: var(--bronze); }
+
+/* Buttons: pills. Quiet by default; .primary is the solid ink/brass hammer. */
+.screen button {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--card);
+  border: none;
+  border-radius: var(--pill);
+  box-shadow: var(--shadow-sm);
+  padding: 8px 15px;
+  margin: 0 6px 6px 0;
+  cursor: pointer;
+}
+.console.screen button { background: #2B2F2D; }
+.screen button:hover:not(:disabled) { filter: brightness(0.97); }
+.screen button:disabled { opacity: 0.4; cursor: not-allowed; }
+.screen button.primary {
+  background: var(--btn-ink);
+  color: var(--btn-ink-text);
+  box-shadow: var(--shadow-md);
+  padding: 10px 22px;
+}
+
+.screen input {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 15px;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  padding: 8px 11px;
+}
+.console.screen input { background: #1B1E1C; }
+
+/* Tables: hairlines inside only, uppercase micro-headers, right-aligned nums */
+.screen table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.screen table th {
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: right;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--hair);
+}
+.screen table th:first-child { text-align: left; }
+.screen table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--hair);
+  text-align: right;
+}
+.screen table td:first-child { text-align: left; font-weight: 600; }
+.screen table tr:last-child td { border-bottom: none; }
+
+.screen ul, .screen ol { margin: 0; padding-left: 18px; }
+.screen li { padding: 3px 0; }
+
+/* Manager strip: small cards; complete squads dim */
+.strip { display: flex; flex-wrap: wrap; gap: 10px; }
+.mgr {
+  background: var(--ground);
+  border-radius: 8px;
+  padding: 10px 13px;
+  min-width: 128px;
+}
+.console .mgr { background: #1B1E1C; }
+.mgr .name { font-weight: 700; }
+.mgr .fills { color: var(--muted); font-size: 12.5px; letter-spacing: 0.04em; margin-top: 3px; }
+.mgr.complete { opacity: 0.5; }
+
+/* Value pills + neutral chip + bronze sealed punctuation */
+.pill {
+  display: inline-block;
+  border-radius: var(--pill);
+  padding: 1px 9px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.pill.up { background: var(--up); color: var(--vg); }
+.pill.down { background: var(--down); color: var(--vb); }
+.pill.flat { background: var(--flat); color: var(--vf); }
+.chip {
+  display: inline-block;
+  background: var(--chip);
+  color: var(--muted);
+  border-radius: var(--pill);
+  padding: 1px 9px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.sealed { color: var(--bronze); font-weight: 700; }
+
+/* The reveal takeover: the signature moment - make it loud */
+section.reveal {
+  background: var(--ink);
+  color: var(--ground);
+  box-shadow: var(--shadow-md);
+}
+section.reveal h2 { color: rgba(255, 255, 255, 0.6); }
+section.reveal .paid { font-family: var(--font-display), sans-serif; font-weight: 300; font-size: 40px; letter-spacing: -0.02em; }
+
+/* Console verdict line */
+.verdict { font-size: 15px; font-weight: 600; padding: 10px 0; }
+.verdict.ok { color: var(--vg); }
+.console .verdict.ok { color: #7FE0B4; }
+.verdict.bad { color: var(--vb); }
+.console .verdict.bad { color: #F0997F; }
+.verdict.idle { color: var(--muted); }
+
+.write-status {
+  background: var(--ground);
+  border-radius: 8px;
+  padding: 9px 13px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.console .write-status { background: #1B1E1C; }
+
+footer { margin-top: 20px; color: var(--muted); font-size: 12px; }
+
+/* Phone-responsive: the war-room pages must read on a phone */
+@media (max-width: 640px) {
+  .screen { padding: 16px 14px 40px; }
+  .screen h1 { font-size: 30px; }
+  .mgr { min-width: calc(50% - 5px); flex: 1 1 calc(50% - 5px); }
+  .screen section { padding: 14px 15px; }
+}

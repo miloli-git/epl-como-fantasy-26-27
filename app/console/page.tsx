@@ -243,7 +243,7 @@ export default function Console() {
       : null;
 
   return (
-    <main data-testid="console-page" style={{ fontFamily: "monospace", padding: 16 }}>
+    <main data-testid="console-page" className="screen console">
       <h1>Console</h1>
       <p>
         <label>
@@ -264,7 +264,7 @@ export default function Console() {
           {connected ? "connected" : "connection lost - retrying"}
         </span>
       </p>
-      <p data-testid="write-status" style={{ border: "1px dashed black", padding: 4 }}>
+      <p data-testid="write-status" className="write-status">
         {status || "no writes yet"}
       </p>
 
@@ -315,9 +315,10 @@ export default function Console() {
             />
           </label>
         </p>
-        <p data-testid="verdict">{verdict.msg}</p>
+        <p data-testid="verdict" className={`verdict ${verdict.kind}`}>{verdict.msg}</p>
         <button
           data-testid="record-sale"
+          className="primary"
           disabled={verdict.kind !== "ok" || !lot || busy}
           onClick={recordSale}
         >
