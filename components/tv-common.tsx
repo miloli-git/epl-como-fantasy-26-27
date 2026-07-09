@@ -32,6 +32,36 @@ export function money(n: number | null | undefined): string {
 export function abbr(s: string | null | undefined): string {
   return (s ?? "?").slice(0, 3).toUpperCase();
 }
+/** Verdict -> pill palette class: STEAL up (green), OVERPAY down (red), FAIR/none flat. */
+export function verdictPill(v: string | null | undefined): string {
+  return v === "STEAL" ? "up" : v === "OVERPAY" ? "down" : "flat";
+}
+
+/** The season-stat fields the spotlight tiles read (shared by the board's
+ * current lot and the read-only player detail page). */
+export type SpotlightStats = {
+  pts: number | null;
+  goals: number | null;
+  assists: number | null;
+  bonus: number | null;
+  starts: number | null;
+  minutes: number | null;
+};
+
+/** The board spotlight's six per-game stat tiles, from a player's season
+ * stats. Shared by the board (app/page.tsx) and the player detail page (#51). */
+export function statTiles(st: SpotlightStats): { v: string | number; k: string }[] {
+  const gp = Math.max(st.starts ?? 0, 1);
+  const startedPct = st.starts != null ? Math.round((st.starts / 38) * 100) : null;
+  return [
+    { v: st.goals ?? "-", k: "Goals" },
+    { v: st.assists ?? "-", k: "Assists" },
+    { v: st.bonus ?? "-", k: "Bonus" },
+    { v: startedPct != null ? `${startedPct}%` : "-", k: `Started ${st.starts ?? 0}/38` },
+    { v: st.minutes != null ? Math.round(st.minutes / gp) : "-", k: "Mins/game" },
+    { v: st.pts != null ? (st.pts / gp).toFixed(1) : "-", k: "Pts/game" },
+  ];
+}
 
 /** Club dot colour for a team short_name; a neutral grey when the club is unknown. */
 export function clubDot(teamShort: string | null | undefined): string {

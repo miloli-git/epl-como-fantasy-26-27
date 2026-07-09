@@ -958,6 +958,72 @@ table.led { border-collapse: collapse; width: 100%; font-size: 19px; }
 .ph-chipbtn.active { background: var(--btn-ink); color: var(--btn-ink-text); }
 .ph-ledger-unsold { opacity: 0.55; }
 
+/* ============================================================
+   PLAYER DETAIL (#51): the read-only spotlight behind a ledger
+   click. Reuses the board's .b-band/.b-bio/.b-photo/.b-plate and
+   .b-spot-* cells inside a 2-column variant of the scaled canvas,
+   plus a top bar (back link) and a SOLD-ONLY sale-result strip.
+   No bidding data is styled here - the sealed value never reaches
+   this page for an unsold player (structural, see player-detail-core).
+   ============================================================ */
+.board-canvas.detail {
+  grid-template-columns: 620px 1fr;
+  grid-template-rows: 56px 1fr auto;
+}
+.board-canvas.detail .b-top { grid-column: 1 / 3; }
+.board-canvas.detail .b-player { grid-column: 1 / 2; grid-row: 2 / 3; }
+.board-canvas.detail .b-spot { grid-column: 2 / 3; grid-row: 2 / 3; }
+.pd-sale {
+  grid-column: 1 / 3; grid-row: 3 / 4;
+  background: var(--card);
+  display: flex; align-items: center; gap: 22px;
+  padding: 16px 28px;
+}
+.pd-sale-owner { font-family: var(--font-display); font-weight: 300; font-size: 34px; letter-spacing: -0.02em; }
+.pd-sale-price { font-size: 22px; font-weight: 300; }
+.pd-sale-val { color: var(--bronze); font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; font-size: 14px; }
+
+/* Clickable ledger rows -> the read-only spotlight (#51). Desktop: the whole
+   <tr> navigates, the name is a real focusable link. Phone: the whole card is
+   an <a>. */
+.led tr.pd-rowlink { cursor: pointer; }
+.led tr.pd-rowlink:hover { background: var(--chip); }
+.led .pd-namelink { color: inherit; text-decoration: none; }
+.led tr.pd-rowlink:hover .pd-namelink { text-decoration: underline; }
+a.pd-rowlink { text-decoration: none; color: inherit; }
+
+/* Back-to-ledger affordance, shared by desktop (top bar) and phone. */
+.pd-back {
+  color: var(--muted); text-decoration: none; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em; font-size: 12px;
+}
+.pd-back:hover { color: var(--ink); }
+
+/* Loading / not-found / error states (no scaled canvas). */
+.pd-msg { min-height: 100vh; background: var(--ground); color: var(--ink); padding: 36px 22px; }
+.pd-msg-body { color: var(--muted); margin-top: 18px; font-size: 15px; }
+
+/* Phone detail: no PhoneNav here (this is not one of the three tabbed
+   screens), so drop the nav clearance and let the portrait pin to the top. */
+.pd-screen { --ph-navh: 0px; padding-top: calc(env(safe-area-inset-top) + 12px); }
+.pd-screen .pd-back { display: inline-block; margin-bottom: 12px; }
+.pd-ph-sale { margin-bottom: 4px; }
+.pd-ph-seal { color: var(--bronze); font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; font-size: 12px; }
+.pd-ph-tiles { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 14px; }
+.pd-ph-tile { padding: 8px 4px; border-left: 1px solid var(--hair); }
+.pd-ph-tile:nth-child(3n+1) { border-left: none; padding-left: 0; }
+.pd-ph-tile .sv { font-family: var(--font-display), system-ui, sans-serif; font-weight: 300; font-size: 26px; line-height: 1; }
+.pd-ph-tile .sk { color: var(--muted); text-transform: uppercase; font-size: 9.5px; letter-spacing: 0.05em; margin-top: 4px; }
+.pd-ph-bio { display: grid; grid-template-columns: repeat(4, 1fr); }
+.pd-ph-bio > div { text-align: center; border-left: 1px solid var(--hair); padding: 2px 4px; }
+.pd-ph-bio > div:first-child { border-left: none; }
+.pd-ph-bio .bv { font-family: var(--font-display), system-ui, sans-serif; font-weight: 300; font-size: 22px; line-height: 1; }
+.pd-ph-bio .bk { color: var(--muted); text-transform: uppercase; font-size: 9.5px; letter-spacing: 0.06em; margin-top: 3px; }
+.pd-ph-owner { font-size: 14px; }
+.pd-ph-owner .k { color: var(--muted); text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.08em; margin-right: 8px; }
+.pd-ph-brief { margin: 0; padding-left: 18px; }
+.pd-ph-brief li { padding: 3px 0; font-size: 14.5px; }
+
 /* Narrow screens (and the phone the console must also work on): one column */
 @media (max-width: 900px) {
   .con-grid { grid-template-columns: 1fr; }

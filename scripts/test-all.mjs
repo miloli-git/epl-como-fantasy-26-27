@@ -59,6 +59,7 @@ try {
     ["ingest", ["scripts/test-ingest.mjs"]],
     ["state", ["scripts/test-state.mjs"]],
     ["players", ["scripts/test-players.mjs"]],
+    ["player detail", ["scripts/test-player-detail.mjs"]],
     ["draft", ["scripts/test-draft.mjs"]],
     ["draft concurrency", ["scripts/test-draft-concurrency.mjs"]],
     ["corrections", ["scripts/test-corrections.mjs"]],

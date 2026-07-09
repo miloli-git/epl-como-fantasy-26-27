@@ -8,9 +8,16 @@
 
 import { useState } from "react";
 import type { CSSProperties } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Position } from "@/lib/config";
 import type { PlayerRow, PlayersPayload } from "@/lib/players";
 import { PL_PHOTO, PhoneNav, SILHOUETTE, abbr, clubDot, money, photoErr, useBoardScale, useIsPhone, usePolledPlayers } from "./tv-common";
+
+/** The read-only spotlight route for a player row (#51). */
+function playerHref(id: number): string {
+  return `/player/${id}`;
+}
 
 /** Sold rows first (highest paid first), then unsold rows by last season's points. */
 function ledgerSort(a: PlayerRow, b: PlayerRow): number {
@@ -24,8 +31,17 @@ function verdictPillClass(v: PlayerRow["verdict"]): string {
 }
 
 function Row({ p }: { p: PlayerRow }) {
+  const router = useRouter();
+  const href = playerHref(p.id);
+  // The whole row navigates for mouse users; the name is a real, focusable
+  // link so the row is keyboard-accessible (#51). Modifier/middle clicks fall
+  // through to the inner <Link>, which opens a new tab natively.
+  const onRowClick = (e: React.MouseEvent) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    router.push(href);
+  };
   return (
-    <tr>
+    <tr className="pd-rowlink" onClick={onRowClick} data-testid={`ledger-row-${p.id}`}>
       <td>
         <span className="pcell">
           <img
@@ -35,7 +51,9 @@ function Row({ p }: { p: PlayerRow }) {
             alt=""
             onError={photoErr}
           />
-          {p.displayName ?? p.name ?? "?"}
+          <Link className="pd-namelink" href={href} onClick={(e) => e.stopPropagation()}>
+            {p.displayName ?? p.name ?? "?"}
+          </Link>
         </span>
       </td>
       <td>
@@ -119,11 +137,13 @@ function phoneLedgerSort(rows: PlayerRow[], sortKey: PhoneSortKey): PlayerRow[] 
 }
 
 function PhoneLedgerRow({ p }: { p: PlayerRow }) {
+  const href = playerHref(p.id);
   if (!p.sold) {
     // Unsold: sealed - no value/verdict/delta and no paid price, ever. Lighter
     // treatment (opacity, see .ph-ledger-unsold) plus an explicit "unsold" tag.
+    // The whole card is a real link to the read-only spotlight (#51).
     return (
-      <div className="ph-card ph-ledger-row ph-ledger-unsold" data-testid={`ph-ledger-${p.id}`}>
+      <Link className="ph-card ph-ledger-row ph-ledger-unsold pd-rowlink" href={href} data-testid={`ph-ledger-${p.id}`}>
         <div className="ph-ledger-left">
           <span className="ph-dot" style={{ background: clubDot(p.teamShort) }} />
           <div style={{ minWidth: 0 }}>
@@ -136,11 +156,11 @@ function PhoneLedgerRow({ p }: { p: PlayerRow }) {
         <div className="ph-ledger-right">
           <span className="ph-sub">unsold</span>
         </div>
-      </div>
+      </Link>
     );
   }
   return (
-    <div className="ph-card ph-ledger-row" data-testid={`ph-ledger-${p.id}`}>
+    <Link className="ph-card ph-ledger-row pd-rowlink" href={href} data-testid={`ph-ledger-${p.id}`}>
       <div className="ph-ledger-left">
         <span className="ph-dot" style={{ background: clubDot(p.teamShort) }} />
         <div style={{ minWidth: 0 }}>
@@ -159,7 +179,7 @@ function PhoneLedgerRow({ p }: { p: PlayerRow }) {
           </span>
         )}
       </div>
-    </div>
+    </Link>
   );
 }
 
