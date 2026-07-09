@@ -1205,3 +1205,109 @@ a.pd-rowlink { text-decoration: none; color: inherit; }
 
 .rb-footer { color: var(--muted); font-size: 12.5px; text-align: center; margin: 44px 0 0; }
 .rb-footer a { color: var(--bronze); }
+
+/* MANAGER DETAIL (#54) --------------------------------------------------------
+   A responsive, read-only manager profile (spend, Claude value, squad by
+   position) - reached from squad cells, the board's manager strip, and the
+   ledger's owner link. Not the scaled 1600x900 TV canvas: one centered,
+   readable layout for desktop and phone alike (mirrors the rulebook's
+   .rb-desktop/.rb-page approach), token colours only.
+   SEALING: this page only ever iterates a manager's OWNED player ids, which
+   are sold by construction - value/verdict here are already unsealed on the
+   PlayerRow (lib/players.ts). Nothing new is queried or exposed. */
+.md-page {
+  min-height: 100vh;
+  background: var(--ground);
+  color: var(--ink);
+  padding: 32px 20px 72px;
+  font-variant-numeric: tabular-nums;
+}
+.md-inner { max-width: 760px; margin: 0 auto; }
+.md-back { display: inline-block; margin-bottom: 20px; }
+
+.md-header { margin-bottom: 22px; }
+.md-eyebrow {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 12px;
+  color: var(--bronze);
+}
+.md-name {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  font-size: clamp(34px, 6vw, 52px);
+  line-height: 1.02;
+  margin: 4px 0 6px;
+}
+.md-sub { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13.5px; flex-wrap: wrap; }
+
+.md-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 22px 0; }
+.md-tile { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 12px 14px; }
+.md-tile .k { color: var(--muted); text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.07em; }
+.md-tile .v { font-family: var(--font-display), system-ui, sans-serif; font-weight: 300; font-size: 24px; letter-spacing: -0.02em; margin-top: 2px; }
+
+.md-valrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 14px 16px;
+  margin-bottom: 22px;
+}
+.md-valrow .lbl { color: var(--muted); text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.09em; }
+.md-valrow .v { font-family: var(--font-display), system-ui, sans-serif; font-weight: 300; font-size: 22px; letter-spacing: -0.02em; }
+.md-valrow .v.pending { font-size: 15px; color: var(--muted); font-weight: 600; text-transform: none; letter-spacing: 0; font-family: var(--font-body), system-ui, sans-serif; }
+.md-valrow .pill { margin-left: auto; }
+
+.md-group { margin-bottom: 22px; }
+.md-grouphead {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-size: 11px;
+  color: var(--muted);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--hair);
+  margin-bottom: 4px;
+}
+.md-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 2px;
+  border-bottom: 1px solid var(--hair);
+  color: inherit;
+  text-decoration: none;
+}
+.md-row:last-child { border-bottom: none; }
+a.md-row:hover { background: var(--chip); }
+.md-cdot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+.md-pname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; font-size: 15px; }
+.md-tier { flex: 0 0 auto; background: var(--chip); color: var(--muted); border-radius: var(--pill); padding: 1px 8px; font-size: 11px; font-weight: 700; }
+.md-price { font-weight: 700; font-size: 14.5px; flex: 0 0 auto; text-align: right; min-width: 62px; }
+.md-value { color: var(--muted); font-size: 13px; flex: 0 0 auto; min-width: 62px; text-align: right; }
+.md-complete { background: var(--chip); color: var(--ink); }
+
+.md-msg { min-height: 100vh; background: var(--ground); color: var(--ink); padding: 36px 22px; }
+.md-msg-body { color: var(--muted); margin-top: 18px; font-size: 15px; }
+
+@media (max-width: 640px) {
+  .md-page { padding: 20px 14px 48px; }
+  .md-tiles { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Link-reset for manager-name links embedded in existing cells (squads/board)
+   and the new player links inside squad rows (#53) - wrapping existing text
+   in a <Link> must not change how it already looks. */
+.sq .nm a, .ph-mgr a, .b-mgr .mn a { color: inherit; text-decoration: none; }
+.sq .nm a:hover, .ph-mgr a:hover, .b-mgr .mn a:hover { text-decoration: underline; }
+a.ph-budcell { text-decoration: none; color: inherit; }
+.sq a.pr.pr-link { color: inherit; text-decoration: none; }
+.sq a.pr.pr-link:hover { background: var(--chip); }
+a.ph-prow.ph-prow-link { color: inherit; text-decoration: none; }

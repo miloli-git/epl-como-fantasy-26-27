@@ -10,6 +10,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import Link from "next/link";
 import type { StatePayload } from "@/lib/state";
 import clubColors from "@/lib/club-colors.json";
 import { washForClub } from "@/lib/club-core.mjs";
@@ -236,10 +237,10 @@ function PhoneBoard({ payload, connected }: { payload: StatePayload | null; conn
           <div className="ph-sechead">Budgets</div>
           <div className="ph-budgrid">
             {managers.map((m) => (
-              <div className="ph-budcell" key={m.slot} data-testid={`manager-${m.slot}`}>
+              <Link className="ph-budcell" key={m.slot} href={`/manager/${m.slot}`} data-testid={`manager-${m.slot}`}>
                 <span className="c">{abbr(m.short)}</span>
                 <span className="m">{money(m.remaining)}</span>
-              </div>
+              </Link>
             ))}
           </div>
         </>
@@ -528,7 +529,10 @@ export default function Board() {
                 const hot = lotPos != null && !m.squadComplete && !posFull;
                 return (
                   <div key={m.slot} data-testid={`manager-${m.slot}`} className={`b-mgr${hot ? " hot" : ""}${m.squadComplete || posFull ? " done" : ""}`}>
-                    <div className="mn">{abbr(m.short)}<span className="mrem">{money(m.remaining)}</span></div>
+                    <div className="mn">
+                      <Link href={`/manager/${m.slot}`}>{abbr(m.short)}</Link>
+                      <span className="mrem">{money(m.remaining)}</span>
+                    </div>
                     {m.squadComplete ? (
                       <div className="tag big">{m.squad.length}/{size} Complete</div>
                     ) : posFull ? (

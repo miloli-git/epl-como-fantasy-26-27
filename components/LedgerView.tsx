@@ -64,7 +64,19 @@ function Row({ p }: { p: PlayerRow }) {
       <td>{p.tier ?? "-"}</td>
       <td>{p.fplPrice != null ? `£${p.fplPrice}` : "-"}</td>
       <td>{p.pts ?? "-"}</td>
-      <td className={p.ownerShort ? "" : "mut"}>{p.ownerShort ? abbr(p.ownerShort) : "-"}</td>
+      <td className={p.ownerShort ? "" : "mut"}>
+        {p.ownerShort ? (
+          p.ownerSlot != null ? (
+            <Link className="pd-namelink" href={`/manager/${p.ownerSlot}`} onClick={(e) => e.stopPropagation()}>
+              {abbr(p.ownerShort)}
+            </Link>
+          ) : (
+            abbr(p.ownerShort)
+          )
+        ) : (
+          "-"
+        )}
+      </td>
       <td>{p.sold ? money(p.price) : "-"}</td>
       <td>
         {!p.sold ? (

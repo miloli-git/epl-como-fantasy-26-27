@@ -6,6 +6,7 @@
 // /api/players directly (its own poll + scale, independent of the board).
 
 import type { CSSProperties } from "react";
+import Link from "next/link";
 import type { Position } from "@/lib/config";
 import type { PlayerRow, PlayersManager, PlayersPayload } from "@/lib/players";
 import { PhoneNav, abbr, clubDot, money, useBoardScale, useIsPhone, usePolledPlayers } from "./tv-common";
@@ -54,7 +55,9 @@ function ManagerCell({ m, byId }: { m: PlayersManager; byId: Map<number, PlayerR
   return (
     <div className="sq" data-testid={`squads-manager-${m.slot}`}>
       <div className="h">
-        <span className="nm">{abbr(m.short)}</span>
+        <span className="nm">
+          <Link href={`/manager/${m.slot}`}>{abbr(m.short)}</Link>
+        </span>
         <span className="fin">{money(m.spent)} - left {money(m.remaining)}</span>
       </div>
       <div className="val">
@@ -69,12 +72,12 @@ function ManagerCell({ m, byId }: { m: PlayersManager; byId: Map<number, PlayerR
         <span className={`pill ${deltaPillClass(m.claudeDelta)}`}>{deltaLabel(m.claudeDelta)}</span>
       </div>
       {top.map((p) => (
-        <div className="pr" key={p.id}>
+        <Link href={`/player/${p.id}`} className="pr pr-link" key={p.id}>
           <span className="cdot" style={{ background: clubDot(p.teamShort) }} />
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.displayName ?? p.name ?? "?"}</span>
           <span className="tn">T{p.tier ?? "?"}</span>
           <span className="p" style={{ color: priceColorVar(p.verdict) }}>{money(p.price)}</span>
-        </div>
+        </Link>
       ))}
       <div className="more">
         {more > 0 ? `+${more} more - ` : ""}
@@ -92,7 +95,9 @@ function PhoneManagerCard({ m, byId, squadSize }: { m: PlayersManager; byId: Map
   return (
     <div className="ph-card" data-testid={`ph-squad-${m.slot}`}>
       <div className="ph-row1">
-        <span className="ph-mgr">{abbr(m.short)}</span>
+        <span className="ph-mgr">
+          <Link href={`/manager/${m.slot}`}>{abbr(m.short)}</Link>
+        </span>
         <span className="ph-money-big">{money(m.remaining)}</span>
       </div>
       <div className="ph-row2">
@@ -104,12 +109,12 @@ function PhoneManagerCard({ m, byId, squadSize }: { m: PlayersManager; byId: Map
       </div>
       <div className="ph-players">
         {owned.map((p) => (
-          <div className="ph-prow" key={p.id}>
+          <Link href={`/player/${p.id}`} className="ph-prow ph-prow-link" key={p.id}>
             <span className="ph-dot" style={{ background: clubDot(p.teamShort) }} />
             <span className="ph-pname">{p.displayName ?? p.name ?? "?"}</span>
             <span className="chip ph-chip">{p.position} T{p.tier ?? "?"}</span>
             <span className="ph-price">{money(p.price)}</span>
-          </div>
+          </Link>
         ))}
       </div>
     </div>
