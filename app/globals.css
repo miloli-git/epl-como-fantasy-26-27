@@ -1035,3 +1035,173 @@ a.pd-rowlink { text-decoration: none; color: inherit; }
   .con-lotline .nm { font-size: 30px; }
   .con-priceinput { font-size: 34px; }
 }
+
+/* RULEBOOK (#52) -------------------------------------------------------------
+   A plain, scrolling rules document - never the scaled 1600x900 TV canvas.
+   Desktop gets its own full-page background (it never mounts .ph-screen);
+   phone reuses .ph-screen purely for the fixed top-nav clearance, then this
+   section's own classes style the readable column inside it. Token colours
+   only - diagrams below are inline SVG that read their fills/strokes from
+   these classes, never a hardcoded hex. */
+.rb-desktop {
+  min-height: 100vh;
+  background: var(--ground);
+  color: var(--ink);
+  padding: 32px 24px 72px;
+}
+.rb-page {
+  max-width: 820px;
+  margin: 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+.rb-backlink {
+  display: inline-block;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 12px;
+  margin-bottom: 22px;
+}
+.rb-backlink:hover { color: var(--ink); }
+
+.rb-header { padding: 4px 0 10px; margin-bottom: 30px; border-bottom: 1px solid var(--hair); }
+.rb-eyebrow {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 12px;
+  color: var(--bronze);
+}
+.rb-title {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  font-size: clamp(32px, 6vw, 48px);
+  line-height: 1.05;
+  margin: 8px 0 10px;
+  color: var(--ink);
+}
+.rb-subtitle { color: var(--muted); font-size: 14.5px; line-height: 1.5; margin: 0 0 20px; max-width: 640px; }
+
+.rb-section { margin: 0 0 30px; }
+.rb-kick {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.rb-h2 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  font-size: 24px;
+  margin: 0 0 12px;
+  color: var(--ink);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.rb-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 20px 22px;
+}
+.rb-prose { font-size: 15px; line-height: 1.65; color: var(--ink); }
+.rb-prose p { margin: 0 0 12px; }
+.rb-prose p:last-child { margin-bottom: 0; }
+.rb-prose ul, .rb-prose ol { margin: 0 0 12px; padding-left: 20px; }
+.rb-prose ul:last-child, .rb-prose ol:last-child { margin-bottom: 0; }
+.rb-prose li { padding: 2px 0; }
+.rb-prose strong { font-weight: 700; }
+
+.rb-diagram { margin: 16px 0 4px; }
+.rb-diagram-svg { width: 100%; height: auto; display: block; }
+.rb-diagram-caption { color: var(--muted); font-size: 12.5px; margin-top: 8px; }
+
+/* Inline-SVG diagram parts: every colour is a token, read via class (not a
+   hardcoded fill on the element) so the diagrams theme with the page. */
+.rb-diagram .rb-box { fill: var(--card); stroke: var(--hair); stroke-width: 1; }
+.rb-diagram .rb-chipbox { fill: var(--chip); }
+.rb-diagram .rb-accentbox { fill: none; stroke: var(--bronze); stroke-width: 1.5; }
+.rb-diagram .rb-line { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+.rb-diagram .rb-accentline { stroke: var(--bronze); stroke-width: 2; fill: none; }
+.rb-diagram .rb-arrowhead { fill: var(--muted); }
+.rb-diagram .rb-accentarrow { fill: var(--bronze); }
+.rb-diagram .rb-tierbar { fill: var(--bronze); }
+.rb-diagram .rb-label {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 12.5px;
+  fill: var(--ink);
+}
+.rb-diagram .rb-label-mut {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 11px;
+  fill: var(--muted);
+}
+.rb-diagram .rb-label-strong {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 12.5px;
+  fill: var(--ink);
+}
+.rb-diagram .rb-kicker {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 10.5px;
+  fill: var(--bronze);
+}
+
+.rb-table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 14px 0 4px; }
+.rb-table th {
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--hair);
+}
+.rb-table td { padding: 9px 10px; border-bottom: 1px solid var(--hair); }
+.rb-table tr:last-child td { border-bottom: none; }
+.rb-table td:last-child, .rb-table th:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+
+.rb-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 14px 0 4px; align-items: center; }
+.rb-legend-item { display: flex; align-items: center; gap: 8px; }
+.rb-legend .pill { font-size: 12.5px; }
+.rb-legend-label { color: var(--muted); font-size: 13px; }
+
+.rb-provisional {
+  display: inline-flex;
+  align-items: center;
+  background: var(--chip);
+  color: var(--bronze);
+  border-radius: var(--pill);
+  padding: 3px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.rb-provisional-note {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--hair);
+}
+.rb-provisional-note a { color: var(--bronze); }
+.rb-provisional-note ul { margin: 8px 0 0; padding-left: 18px; }
+.rb-provisional-note li { padding: 2px 0; }
+
+.rb-footer { color: var(--muted); font-size: 12.5px; text-align: center; margin: 44px 0 0; }
+.rb-footer a { color: var(--bronze); }
