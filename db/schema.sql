@@ -2,29 +2,17 @@
 -- Target shape per handoff 04-DATA-MODEL.md. Config (budget, squad, managers)
 -- lives in league.config.json, NOT here, so the schema is season-agnostic.
 --
--- Idempotent AND migrates from the old scaffold schema: no production data
--- exists yet, so old-shape tables (picks, gw_scores, name-keyed managers,
--- narrow players) are dropped and recreated rather than altered.
-
--- Old scaffold tables, gone entirely (season scoring is out of v1 scope).
-drop table if exists picks, gw_scores cascade;
-
--- Drop old-shape managers/players if their columns don't match the target.
-do $$
-begin
-  if exists (
-    select from information_schema.columns
-    where table_schema = 'public' and table_name = 'managers' and column_name = 'name'
-  ) then
-    drop table if exists managers cascade;
-  end if;
-  if exists (
-    select from information_schema.columns
-    where table_schema = 'public' and table_name = 'players' and column_name = 'name'
-  ) then
-    drop table if exists players cascade;
-  end if;
-end $$;
+-- ADDITIVE + IDEMPOTENT (#33). This file is safe to run against a live
+-- database: it only ever CREATEs tables IF NOT EXISTS and ADDs columns IF NOT
+-- EXISTS. It NEVER drops or recreates a table, so `npm run db:setup` can never
+-- wipe a season of record once the production database holds real data.
+--   - New tables: add a `create table if not exists ...` below.
+--   - New columns: add them to the create below AND to the guarded migrations
+--     block at the bottom (`alter table ... add column if not exists`), so
+--     fresh and existing databases converge to the same shape.
+-- (The original scaffold's drop-and-recreate of the old `picks` / `gw_scores`
+-- and name-keyed managers/players was removed here: no production data was ever
+-- in the target shape when it mattered, and a live db:setup must not drop.)
 
 create table if not exists managers (
   id            serial primary key,
