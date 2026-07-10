@@ -94,6 +94,21 @@ try {
     CHECK_VIOLATION,
     () => sql`insert into sales (player_id, manager_id, price) values (${TEST_PLAYER_ID}, ${manager.id}, 0)`
   );
+
+  // 4. Stage tag (#31): a money-event row inserted without a stage defaults to
+  //    'auction-1'. sales checked behaviourally; trades via its column default.
+  await sql`insert into sales (player_id, manager_id, price) values (${TEST_PLAYER_ID}, ${manager.id}, 15)`;
+  const [saleRow] = await sql`select stage from sales where player_id = ${TEST_PLAYER_ID}`;
+  report("sales.stage defaults to auction-1 (#31)", saleRow?.stage === "auction-1", `got ${saleRow?.stage}`);
+  await sql`delete from sales where player_id = ${TEST_PLAYER_ID}`;
+  const [tradeStage] = await sql`
+    select column_default, is_nullable from information_schema.columns
+    where table_name = 'trades' and column_name = 'stage'`;
+  report(
+    "trades.stage exists, NOT NULL, defaults to auction-1 (#31)",
+    tradeStage != null && tradeStage.is_nullable === "NO" && /auction-1/.test(tradeStage.column_default ?? ""),
+    `got ${JSON.stringify(tradeStage)}`
+  );
 } catch (err) {
   console.error("test-schema failed to run:", err.message);
   failed = true;

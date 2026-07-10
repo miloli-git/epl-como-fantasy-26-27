@@ -67,6 +67,7 @@ create table if not exists sales (
   price       integer not null check (price > 0),
   lot_no      integer,
   phase       integer check (phase in (1, 2)),
+  stage       text not null default 'auction-1',  -- season-economy stage (#31): auction-1|waivers-1|auction-2|waivers-2
   created_at  timestamptz not null default now()
 );
 
@@ -88,6 +89,7 @@ create table if not exists trades (
   manager_b    integer references managers(id),
   cash_a_to_b  integer not null default 0,
   cash_b_to_a  integer not null default 0,
+  stage        text not null default 'auction-1',  -- season-economy stage (#31), matches sales.stage
   created_at   timestamptz not null default now(),
   voided       boolean not null default false
 );
@@ -146,6 +148,14 @@ create table if not exists app_state (
 
 -- Idempotent migration for DBs created before reveal_until existed.
 alter table app_state add column if not exists reveal_until timestamptz;
+
+-- Season-economy stage tag (#31): every money event knows which stage it
+-- belongs to (auction-1 | waivers-1 | auction-2 | waivers-2). Existing rows
+-- backfill to auction-1 via the NOT NULL DEFAULT. No read derives on stage yet;
+-- this is the forward-compatible seam so February never has to untangle
+-- August's rows. See docs/SEASON-ECONOMY.md and issue #28.
+alter table sales  add column if not exists stage text not null default 'auction-1';
+alter table trades add column if not exists stage text not null default 'auction-1';
 
 create index if not exists sales_manager_idx on sales(manager_id);
 create index if not exists lot_events_player_idx on lot_events(player_id);
