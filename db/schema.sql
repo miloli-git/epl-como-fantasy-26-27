@@ -115,6 +115,26 @@ create table if not exists briefs (
   swept_at  timestamptz
 );
 
+-- End-of-night recap archive (#32). Leftover money (Y1) per manager after the
+-- August auction is a NUMBER OF RECORD under the season-economy model (#28): it
+-- becomes next February's war chest, so it must survive as a durable snapshot,
+-- not be re-derived after later stages change the wallet. Per-manager leftover,
+-- spend, and squad count are snapshotted (spend/squad are for display and are
+-- otherwise derivable); the full rosters stay derivable from the sales/trades
+-- ledger and are NOT copied here. One row per (season, manager); re-running the
+-- archive upserts. `season` comes from league.config.json, never hardcoded.
+create table if not exists season_recap (
+  id            serial primary key,
+  season        text not null,
+  manager_slot  integer not null,
+  manager_short text not null,
+  spent         integer not null,
+  leftover      integer not null,
+  squad_count   integer not null,
+  created_at    timestamptz not null default now(),
+  unique (season, manager_slot)
+);
+
 create table if not exists audit_log (
   id         serial primary key,
   actor      text,

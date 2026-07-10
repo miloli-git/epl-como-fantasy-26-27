@@ -1305,3 +1305,66 @@ a.ph-budcell { text-decoration: none; color: inherit; }
 .sq a.pr.pr-link { color: inherit; text-decoration: none; }
 .sq a.pr.pr-link:hover { background: var(--chip); }
 a.ph-prow.ph-prow-link { color: inherit; text-decoration: none; }
+
+/* RECAP (#32): post-auction summary, outside the live loop. Mobile-first, one
+   centred column that reads fine on a phone and on the TV. Reuses the theme
+   tokens (--ink/--muted/--card/--hair/--vg/--vb/--vf/--bronze). */
+.rc-screen {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 20px 14px 40px;
+}
+.rc-loading { color: var(--muted); padding: 40px 4px; }
+.rc-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; margin-bottom: 18px;
+}
+.rc-eyebrow { color: var(--bronze); font-size: 12px; font-weight: 700; letter-spacing: 0.14em; }
+.rc-title { margin: 2px 0 0; font-size: 30px; line-height: 1.05; }
+.rc-head-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.rc-badge { font-size: 11px; font-weight: 700; border-radius: var(--pill); padding: 3px 10px; }
+.rc-badge.on { background: var(--vg); color: #fff; }
+.rc-badge.off { background: var(--chip); color: var(--muted); }
+.rc-refresh {
+  font: inherit; font-size: 13px; cursor: pointer;
+  background: var(--chip); color: var(--ink);
+  border: 1px solid var(--hair); border-radius: var(--pill); padding: 3px 12px;
+}
+
+.rc-awards {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 22px;
+}
+.rc-award {
+  background: var(--card); border: 1px solid var(--hair);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  padding: 12px 13px; min-width: 0;
+}
+.rc-award-lbl { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.rc-award-empty { color: var(--muted); font-size: 13px; margin-top: 10px; }
+.rc-award-name { font-size: 19px; font-weight: 700; margin-top: 6px; overflow-wrap: anywhere; }
+.rc-award-owner { color: var(--muted); font-size: 13px; }
+.rc-award-figs { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; font-size: 13px; color: var(--muted); }
+.rc-award-verdict { margin-top: 6px; font-weight: 700; font-size: 14px; }
+.rc-award-verdict.over { color: var(--vb); }
+.rc-award-verdict.under { color: var(--vg); }
+.rc-award-verdict.fair { color: var(--vf); }
+
+.rc-sechead { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+.rc-sub { color: var(--muted); font-weight: 400; font-size: 12px; }
+.rc-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.rc-table th, .rc-table td { padding: 8px 8px; border-bottom: 1px solid var(--hair); text-align: left; }
+.rc-table th { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.rc-table th.num, .rc-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.rc-table a { color: inherit; text-decoration: none; }
+.rc-table a:hover { text-decoration: underline; }
+.rc-rank { color: var(--muted); width: 1.5em; }
+.rc-leftover { font-weight: 700; color: var(--vg); }
+.rc-table tfoot td { font-weight: 700; border-bottom: none; }
+.rc-foot { margin-top: 24px; font-size: 14px; }
+.rc-foot a { color: var(--muted); text-decoration: none; }
+.rc-foot a:hover { color: var(--ink); }
+
+@media (max-width: 560px) {
+  .rc-awards { grid-template-columns: 1fr; }
+  .rc-title { font-size: 25px; }
+}
