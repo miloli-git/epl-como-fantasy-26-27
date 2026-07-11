@@ -196,7 +196,7 @@ export function crestErr(e: React.SyntheticEvent<HTMLImageElement>) {
 
 // ---- Phone bottom navigation (#45) -----------------------------------------
 // Persistent tab bar for the room-facing phone screens (board, squads,
-// ledger, rulebook - #52). The console is a separate operator surface and is
+// ledger, trades, rulebook - #52/#58). The console is a separate operator surface and is
 // not part of this nav. Rendered only inside the phone sub-components, so it
 // never reaches the TV canvas path.
 
@@ -204,6 +204,7 @@ const PHONE_TABS = [
   { href: "/", label: "Board" },
   { href: "/squads", label: "Squads" },
   { href: "/ledger", label: "Ledger" },
+  { href: "/trades", label: "Trades" },
   { href: "/rulebook", label: "Rules" },
 ] as const;
 
