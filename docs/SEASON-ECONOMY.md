@@ -4,7 +4,7 @@
 > mechanics not yet ratified by the group. **Nothing here changes v1 or the
 > Aug 2 auction night.** This doc exists so v2 is designed against a written
 > spec and so v1 code leaves the right seams open.
-> Implementation note, 11 Jul: the two v1 seams below are landed in source. Sales and trades carry an additive `stage` tag, and `/recap` plus `season_recap` records the leftover August war chest. Production `/api/recap` returns 500; the cause is unconfirmed pending the approved schema procedure, log inspection and re-smoke. The broader wallet model remains a proposal.
+> Implementation note, 11 Jul: the two v1 seams below are landed in source. Sales and trades carry an additive `stage` tag, and `/recap` plus `season_recap` records the leftover August war chest. Production `/api/recap` returns 200 and the browser renders the completed v1 recap. The broader wallet model remains a proposal.
 
 ## The idea in one line
 

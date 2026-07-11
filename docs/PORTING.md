@@ -1,7 +1,7 @@
 # Porting - NAS reference → Vercel
 
 > The portability claim is a v1 acceptance criterion, not a hope. This walk must complete with **no code change**. If it doesn't, that's a bug to fix in the app, not to patch around in the deploy.
-> Observed 11 Jul 2026: commit `008d241` is deployed at [epl-como-fantasy-26-27-cgtd.vercel.app](https://epl-como-fantasy-26-27-cgtd.vercel.app) with Neon and the real roster override. The deployment is green, but production `/api/recap` returns 500 and the browser shows `recap unavailable - retry`. The cause is unconfirmed pending the approved schema procedure and log inspection. Operational and formal port-walk closure remain pending.
+> Observed 11 Jul 2026: commit `b9d1c5b` is deployed at [epl-como-fantasy-26-27-cgtd.vercel.app](https://epl-como-fantasy-26-27-cgtd.vercel.app) with Neon and the real roster override. The deployment, recap and read-only viewer smoke are green. Operational and formal port-walk closure remain pending.
 
 ## Why it ports cleanly
 
@@ -24,11 +24,11 @@
 
 ## Current evidence (11 Jul 2026)
 
-- Vercel reports a successful production deployment for commit `008d241` through the stable production URL.
+- Vercel reports a successful production deployment for commit `b9d1c5b` through the stable production URL.
 - The app is connected to Neon and renders the real eight-manager override plus the 841-player pool.
 - Read-only production checks observed the board and read routes rendering, no non-null value for any of 816 unsold players, and a 401 for an unauthenticated write.
-- The new recap code is deployed, but `/api/recap` returns 500 and the browser shows `recap unavailable - retry`. The cause is unconfirmed until the approved schema procedure and logs are inspected.
-- Still required for closure: run the current non-destructive `db:setup`, confirm existing data survives, re-smoke `/api/recap` and `/recap`, reset/freeze production and repeat the audit, record that no source change beyond the already-shipped roster loader was needed, run the two-device sale/reveal/undo check, then complete the sustained-load and physical/fallback drills in `docs/TEST-PLAN.md`.
+- Production `/api/recap` returns 200, and the browser renders awards, final squads, FPL Draft checklists and the ledger link. `/trades` and player detail also render against live data.
+- Still required for closure: reset/freeze production and repeat the audit, record that no source change beyond the already-shipped roster loader was needed, run the two-device sale/reveal/undo check, then complete the sustained-load and physical/fallback drills in `docs/TEST-PLAN.md`.
 
 ## If a code change was required
 

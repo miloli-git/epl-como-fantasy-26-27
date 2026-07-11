@@ -87,6 +87,50 @@ try {
     report("fastest hammer null (no timed lots) - acceptable", true);
   }
 
+  // 5b. Squads (#56): one per manager, sorted by slot, every listed player SOLD.
+  const ORD = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
+  const squadSlots = recap.squads.map((s) => s.slot);
+  report(
+    "one squad per manager, sorted by slot",
+    recap.squads.length === players.managers.length &&
+      squadSlots.every((v, i) => i === 0 || squadSlots[i - 1] < v),
+    `slots: ${squadSlots.join(",")}`,
+  );
+  const countOk = recap.squads.every(
+    (s) => s.players.length === s.squadCount && s.squadCount === squadCountBySlot.get(s.slot),
+  );
+  report("squadCount equals listed players equals owned count per manager", countOk);
+  const allSquadIds = recap.squads.flatMap((s) => s.players.map((p) => p.id));
+  report(
+    "every squad player is a sold player (no unsold roster leak / seal not widened)",
+    allSquadIds.every((id) => soldIds.has(id)),
+  );
+  report(
+    "total squad players equals soldCount (each sold player in exactly one squad)",
+    allSquadIds.length === recap.soldCount && new Set(allSquadIds).size === allSquadIds.length,
+    `${allSquadIds.length} vs ${recap.soldCount}`,
+  );
+  const orderOk = recap.squads.every((s) =>
+    s.players.every(
+      (p, i, arr) =>
+        i === 0 ||
+        (ORD[arr[i - 1].position] ?? 9) < (ORD[p.position] ?? 9) ||
+        ((ORD[arr[i - 1].position] ?? 9) === (ORD[p.position] ?? 9) &&
+          (arr[i - 1].price ?? 0) >= (p.price ?? 0)),
+    ),
+  );
+  report("squad players ordered by position then price desc", orderOk);
+  report(
+    "every squad player carries a FPL web_name for draft entry",
+    recap.squads.every((s) => s.players.every((p) => typeof p.webName === "string" && p.webName.length > 0)),
+  );
+  const quotaSum = Object.values(recap.squad).reduce((a, b) => a + b, 0);
+  report(
+    "squad quotas present and sum to a positive squad size",
+    recap.squad && quotaSum > 0 && ["GK", "DEF", "MID", "FWD"].every((k) => k in recap.squad),
+    `quotas=${JSON.stringify(recap.squad)}`,
+  );
+
   // 6. Archive path: a snapshot under a throwaway season is a NUMBER OF RECORD
   //    that overrides live derivation. Use sentinel leftovers unlike any live one.
   const slots = players.managers.map((m) => m.slot);

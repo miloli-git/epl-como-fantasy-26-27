@@ -97,6 +97,7 @@ try {
     ["draft concurrency", ["scripts/test-draft-concurrency.mjs"]],
     ["corrections", ["scripts/test-corrections.mjs"]],
     ["trade", ["scripts/test-trade.mjs"]],
+    ["trades", ["scripts/test-trades.mjs"]],
     ["lot", ["scripts/test-lot.mjs"]],
     ["full night", ["scripts/test-full-night.mjs"]],
   ];

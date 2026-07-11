@@ -1,6 +1,6 @@
 # Deployment - path to production
 
-> Status: **DEPLOYED BETA** at commit `008d241`, observed 11 Jul 2026. Vercel is green, but production `/api/recap` returns 500 and the browser shows `recap unavailable - retry`. The cause is unconfirmed pending the approved schema procedure and log inspection.
+> Status: **DEPLOYED BETA** at commit `b9d1c5b`, observed 11 Jul 2026. Vercel is green. Production `/api/recap` returns 200 and the browser renders awards, final squads, FPL Draft checklists and the ledger link.
 > Production: [epl-como-fantasy-26-27-cgtd.vercel.app](https://epl-como-fantasy-26-27-cgtd.vercel.app). Target: rehearsed and accepted before the pool freeze (Jul 30-31), auction Aug 2.
 > Ownership: `docs/PRD.md` holds requirements; `docs/TEST-PLAN.md` holds verification method and latest evidence; issue #9 holds live delivery status; issue #23 holds deployment execution evidence.
 
@@ -35,7 +35,7 @@ The app is a **Next.js website** backed by a **Postgres database**. In productio
 | GitHub | ✅ exists | deployment owner | Collaborator access on this repo is in place (confirmed 9 Jul); Vercel signs in with this account |
 | Neon (neon.tech) | ✅ created 8 Jul | deployment owner | Free tier; holds the production database |
 | Anthropic Console (console.anthropic.com) | ✅ existing key `como-draft` | deployment owner | Small credit balance covers valuations + briefs (realistically a few dollars for ~840 players) |
-| Vercel (vercel.com) | ✅ live | deployment owner | Project imported, production env set and commit `008d241` deployed successfully through the GitHub integration |
+| Vercel (vercel.com) | ✅ live | deployment owner | Project imported, production env set and commit `b9d1c5b` deployed successfully through the GitHub integration |
 
 ## Credentials - what exists and where it lives
 
@@ -63,9 +63,9 @@ The one known prerequisite code change, the `LEAGUE_CONFIG_LOCAL` loader, shippe
 2. **Create the Vercel account** - ✅ done 8 Jul (GitHub sign-in, Hobby plan).
 3. **Import the project** - ✅ live through the Vercel GitHub integration.
 4. **Set environment variables** - ✅ `DATABASE_URL`, `COMMISSIONER_TOKEN` and `LEAGUE_CONFIG_LOCAL` are active in production. Keep their values out of this repo.
-5. **Prepare the database** - partial. The Neon path is live with the real eight-manager roster and 841-player pool. Production `/api/recap` returns 500; whether the current additive schema has reached Neon is unconfirmed until the approved schema procedure and logs are inspected. Run the current non-destructive `db:setup`, verify existing auction data survives, then smoke `/api/recap` and `/recap`. Production still contains practice state and must be reset before freeze.
-6. **Browser smoke test** - partial. A human observed the production board and existing read routes rendering. The recap currently shows an unavailable error because its API returns 500. After the approved diagnosis and non-destructive `db:setup` gate, smoke the recap, then use two physical devices to record a test sale via the console, confirm the board updates within ~2s and the reveal fires, and undo it. Server 200s are not sufficient.
-7. **Payload audit on production** - ✅ observed at `6e2f5f4`: `/api/state` excluded the value from the unsold current lot, `/api/players` returned `value: null` for all 816 unsold players, and a write without the token returned 401. The current deployment is green at `008d241`; repeat the audit after the production reset/freeze.
+5. **Prepare the database** - ✅ live runtime path. Neon serves the real eight-manager roster, 841-player pool and the complete recap payload. Production `/api/recap` returns 200. The issue record does not establish which operational intervention resolved the earlier 500, so do not infer that a specific schema command ran. Production still contains practice state and must be reset before freeze.
+6. **Browser smoke test** - partial. A human observed the production board, recap, trades log and player detail routes rendering. The recap shows awards, final squads, FPL Draft checklists and the ledger link. Still use two physical devices to record a test sale via the console, confirm the board updates within ~2s and the reveal fires, and undo it. Server 200s are not sufficient.
+7. **Payload audit on production** - ✅ observed at `6e2f5f4`: `/api/state` excluded the value from the unsold current lot, `/api/players` returned `value: null` for all 816 unsold players, and a write without the token returned 401. The current deployment is green at `b9d1c5b`; repeat the audit after the production reset/freeze.
 8. **Record the port walk result** in `docs/PORTING.md` and issue #23. If any code change beyond the shipped roster loader was needed, that is a portability bug to fix in the app.
 
 Ongoing until the freeze: re-run `npm run ingest:stats` from the laptop as needed for price/news drift; **pool freeze Jul 30-31** per the locked decision, after which no ingest runs until after the auction.
@@ -99,17 +99,15 @@ The fallback app path uses `npm run build` then `npm start`. `output: standalone
 
 | When | What |
 |---|---|
-| Now | Run the approved recap diagnosis and non-destructive `db:setup` gate, then smoke recap; finish #56; reconcile issue #23; reset/freeze production; repeat the payload audit; complete the two-device mutation check and prepare the physical rehearsal |
+| Now | Reconcile issue #23 with the healthy recap; reset/freeze production; repeat the payload audit; complete the two-device mutation check and prepare the physical rehearsal |
 | Run 4 (Jul 28-Aug 1) | Failure drills, runbook + auctioneer cheat sheet, dress rehearsal on the production URL, audit scrub |
 | Jul 30-31 | Pool freeze - final ingest, then the asset caching pass (`npm run assets -- --gentle`) on the serving machine and the fallback laptop, then hands off the player table |
 | Aug 2, morning | Valuations + briefs job; pre-flight checklist; re-run the asset caching pass to pick up any newly published photos |
 | Aug 2, night | The auction. Token to the auctioneer; fallback laptop in the room |
-| Aug 3+ | Rotate `COMMISSIONER_TOKEN`; run the recap archive and preserve the final ledger once #56 is complete |
+| Aug 3+ | Rotate `COMMISSIONER_TOKEN`; run the recap archive and preserve the final ledger |
 
 ## Open items
 
-1. **Production recap diagnosis + schema gate** - inspect logs through the approved procedure, run the current non-destructive `db:setup`, confirm existing data survives, then verify `/api/recap` returns 200 and `/recap` renders. Source and scratch tests are green; production currently returns 500 and shows the unavailable state, with cause unconfirmed.
-2. **Remaining recap scope** - final squads, FPL Draft entry checklist and final-ledger link in #56.
-3. **Acceptance evidence** - production reset/freeze and post-reset audit; formal two-device sale/reveal/undo; 10-tab sustained load; physical TV, hotspot, laptop and cold-standby drills. The scratch workflow is documented in `docs/TEST-RUN-RESET.md`; execution evidence remains in issue #23.
-4. **Auctioneer identity** - decided as "a neutral non-manager"; the specific person to be confirmed by Jul 28 so the cheat-sheet handoff and token delivery are planned.
-5. **2025 rosters** for the prior-owner line - still being hunted; feature hides gracefully without it.
+1. **Acceptance evidence** - production reset/freeze and post-reset audit; formal two-device sale/reveal/undo; 10-tab sustained load; physical TV, hotspot, laptop and cold-standby drills. The scratch workflow is documented in `docs/TEST-RUN-RESET.md`; execution evidence remains in issue #23.
+2. **Auctioneer identity** - decided as "a neutral non-manager"; the specific person to be confirmed by Jul 28 so the cheat-sheet handoff and token delivery are planned.
+3. **2025 rosters** for the prior-owner line - still being hunted; feature hides gracefully without it.

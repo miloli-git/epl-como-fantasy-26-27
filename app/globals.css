@@ -373,6 +373,8 @@ footer { margin-top: 20px; color: var(--muted); font-size: 12px; }
 .b-stat:first-child { border-left: none; padding-left: 0; }
 .b-stat .sv { font-family: var(--font-display); font-weight: 300; font-size: 42px; letter-spacing: -0.02em; line-height: 1; }
 .b-stat .sk { color: var(--muted); text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; margin-top: 5px; }
+.b-extras { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 14px; color: var(--muted); margin: -8px 0 16px; }
+.b-extras b { color: var(--ink); font-weight: 700; margin-right: 4px; }
 .b-owner { font-size: 15px; margin: 4px 0 16px; }
 .b-owner .k, .b-brief .k { color: var(--muted); text-transform: uppercase; font-size: 11px; letter-spacing: 0.08em; margin-right: 8px; }
 .b-brief { border-top: 1px solid var(--hair); padding-top: 14px; }
@@ -1008,6 +1010,8 @@ a.pd-rowlink { text-decoration: none; color: inherit; }
 .pd-ph-tile:nth-child(3n+1) { border-left: none; padding-left: 0; }
 .pd-ph-tile .sv { font-family: var(--font-display), system-ui, sans-serif; font-weight: 300; font-size: 26px; line-height: 1; }
 .pd-ph-tile .sk { color: var(--muted); text-transform: uppercase; font-size: 9.5px; letter-spacing: 0.05em; margin-top: 4px; }
+.pd-ph-extras { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); margin-top: 12px; }
+.pd-ph-extras b { color: var(--ink); font-weight: 700; margin-right: 3px; }
 .pd-ph-bio { display: grid; grid-template-columns: repeat(4, 1fr); }
 .pd-ph-bio > div { text-align: center; border-left: 1px solid var(--hair); padding: 2px 4px; }
 .pd-ph-bio > div:first-child { border-left: none; }
@@ -1364,7 +1368,142 @@ a.ph-prow.ph-prow-link { color: inherit; text-decoration: none; }
 .rc-foot a { color: var(--muted); text-decoration: none; }
 .rc-foot a:hover { color: var(--ink); }
 
+/* Name links reuse the ledger convention (inherit colour, underline on hover). */
+.rc-screen .pd-namelink { color: inherit; text-decoration: none; }
+.rc-screen .pd-namelink:hover { text-decoration: underline; }
+
+/* --- Final squads + FPL Draft entry checklist (#56) --------------------- */
+.rc-squads { margin: 26px 0 4px; }
+.rc-squads-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+}
+.rc-mcard {
+  background: var(--card); border: 1px solid var(--hair);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  margin-bottom: 8px; overflow: hidden;
+}
+.rc-msum {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; font: inherit; text-align: left; cursor: pointer;
+  background: none; border: none; color: var(--ink); padding: 11px 13px;
+}
+.rc-msum-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.rc-chevron {
+  color: var(--muted); font-size: 18px; line-height: 1;
+  transition: transform 0.12s ease; transform: rotate(0deg);
+}
+.rc-chevron.open { transform: rotate(90deg); }
+.rc-mname { font-weight: 700; font-size: 16px; }
+.rc-msub { color: var(--muted); font-size: 13px; }
+.rc-mprog {
+  color: var(--muted); font-size: 12px; font-weight: 700;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.rc-mbody { padding: 2px 13px 12px; border-top: 1px solid var(--hair); }
+.rc-mnote { color: var(--muted); font-size: 12px; margin: 10px 0 6px; }
+.rc-pgroup { margin-top: 10px; }
+.rc-pghead {
+  color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; margin-bottom: 2px;
+}
+.rc-prow-empty { color: var(--muted); font-size: 13px; padding: 4px 2px; }
+.rc-prow {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 2px; border-bottom: 1px solid var(--hair);
+}
+.rc-prow:last-child { border-bottom: none; }
+.rc-check { display: inline-flex; flex: 0 0 auto; }
+.rc-check input { width: 17px; height: 17px; cursor: pointer; accent-color: var(--bronze); }
+.rc-pname { flex: 1 1 auto; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.rc-pmeta { flex: 0 0 auto; color: var(--muted); font-size: 12px; }
+.rc-pprice { flex: 0 0 auto; font-variant-numeric: tabular-nums; font-weight: 700; }
+.rc-pval { flex: 0 0 auto; }
+.rc-pending { color: var(--muted); font-size: 12px; }
+
+.rc-actions { margin-top: 22px; display: flex; gap: 10px; flex-wrap: wrap; }
+.rc-actionlink {
+  font-size: 14px; font-weight: 700; text-decoration: none;
+  background: var(--chip); color: var(--ink);
+  border: 1px solid var(--hair); border-radius: var(--pill); padding: 8px 16px;
+}
+.rc-actionlink:hover { border-color: var(--bronze); }
+
 @media (max-width: 560px) {
   .rc-awards { grid-template-columns: 1fr; }
   .rc-title { font-size: 25px; }
+  .rc-pmeta { display: none; }
+}
+
+/* TRADES (#58): a read-only trade log, outside the live loop. One centred
+   column (same rc-screen approach as the recap), a card per trade. Reuses the
+   theme tokens (--ink/--muted/--card/--hair/--bronze/--pill/--radius/--shadow-sm). */
+.tr-screen {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 20px 14px 40px;
+}
+.tr-loading { color: var(--muted); padding: 40px 4px; }
+.tr-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; margin-bottom: 18px;
+}
+.tr-eyebrow { color: var(--bronze); font-size: 12px; font-weight: 700; letter-spacing: 0.14em; }
+.tr-title { margin: 2px 0 0; font-size: 30px; line-height: 1.05; }
+.tr-head-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.tr-count { color: var(--muted); font-size: 13px; }
+.tr-refresh {
+  font: inherit; font-size: 13px; cursor: pointer;
+  background: var(--chip); color: var(--ink);
+  border: 1px solid var(--hair); border-radius: var(--pill); padding: 3px 12px;
+}
+.tr-empty { color: var(--muted); padding: 24px 4px; font-size: 15px; }
+
+.tr-list { display: flex; flex-direction: column; gap: 10px; }
+.tr-card {
+  background: var(--card); border: 1px solid var(--hair);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  padding: 13px 15px;
+}
+.tr-card-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 10px; flex-wrap: wrap; margin-bottom: 10px;
+  border-bottom: 1px solid var(--hair); padding-bottom: 9px;
+}
+.tr-matchup { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 700; }
+.tr-vs { color: var(--muted); font-weight: 400; }
+.tr-card-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tr-stage {
+  color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; background: var(--chip); border-radius: var(--pill); padding: 2px 9px;
+}
+.tr-time { color: var(--muted); font-size: 12px; }
+
+.tr-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.tr-side { min-width: 0; }  /* let long names wrap instead of overflowing the grid cell */
+.tr-side-lbl { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+.tr-side-empty { color: var(--muted); font-size: 13px; }
+.tr-plist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.tr-prow { font-size: 14px; overflow-wrap: anywhere; display: flex; align-items: center; gap: 7px; }
+.tr-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+.tr-pname { min-width: 0; }
+.tr-pos { color: var(--muted); font-size: 12px; flex: 0 0 auto; }
+.tr-cash { font-weight: 700; }
+
+.tr-foot { margin-top: 24px; font-size: 14px; }
+.tr-foot a { color: var(--muted); text-decoration: none; }
+.tr-foot a:hover { color: var(--ink); }
+
+/* Name links reuse the ledger/recap convention (inherit colour, underline on hover). */
+.tr-screen .pd-namelink { color: inherit; text-decoration: none; }
+.tr-screen .pd-namelink:hover { text-decoration: underline; }
+
+@media (max-width: 640px) {
+  /* Clears the fixed .ph-nav bar (see components/tv-common.tsx PhoneNav),
+     which this screen renders on the phone path same as ledger/squads/board. */
+  .tr-screen { padding-top: calc(var(--ph-navh) + env(safe-area-inset-top) + 10px); }
+}
+
+@media (max-width: 560px) {
+  .tr-sides { grid-template-columns: 1fr; gap: 10px; }
+  .tr-title { font-size: 25px; }
 }

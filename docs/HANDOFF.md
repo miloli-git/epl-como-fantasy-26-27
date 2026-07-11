@@ -1,6 +1,6 @@
 # Handoff - Application and Vercel deployment
 
-> Status: Vercel beta deployed at commit `008d241`; production recap diagnosis, final rehearsal and acceptance pending.
+> Status: Vercel beta deployed at commit `b9d1c5b`; recap and read-only viewer smoke are green, while final rehearsal and acceptance remain pending.
 
 Repo: `github.com/Kolam-Studios/epl-como-fantasy-26-27` (public, MIT). Production: [epl-como-fantasy-26-27-cgtd.vercel.app](https://epl-como-fantasy-26-27-cgtd.vercel.app). v1 scope is the **live auction only** (in person, Aug 2 2026); season scoring + rebids are deferred.
 
@@ -22,7 +22,7 @@ Every piece that would normally break a serverless port has been avoided up fron
 
 ## Porter's agent - port checklist
 
-See `docs/PORTING.md` for the full walk. The Vercel + Neon path and real roster override are green at `008d241`; the read-only production audit was observed at `6e2f5f4`. The new recap source is deployed, but `/api/recap` returns 500 and the browser shows `recap unavailable - retry`. The cause is unconfirmed pending the approved schema procedure and log inspection. The remaining handoff gate is to run the current non-destructive `db:setup`, confirm existing data survives, re-smoke `/api/recap` and `/recap`, reset/freeze production, repeat the audit, then record the two-device sale/reveal/undo check, sustained load and physical/fallback drills. No further source change should be required after the shipped roster loader; if one is, that is a portability bug to fix in the app.
+See `docs/PORTING.md` for the full walk. The Vercel + Neon path and real roster override are green at `b9d1c5b`; the read-only production audit was observed at `6e2f5f4`. Production `/api/recap` returns 200, and the browser renders awards, final squads, FPL Draft checklists and the ledger link. The remaining handoff gate is to reset/freeze production, repeat the audit, then record the two-device sale/reveal/undo check, sustained load and physical/fallback drills. No further source change should be required after the shipped roster loader; if one is, that is a portability bug to fix in the app.
 
 ## What is reference-only vs portable
 

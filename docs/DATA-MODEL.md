@@ -1,6 +1,6 @@
 # Data Model
 
-> Status: APPROVED current shape at commit `008d241`. Canonical schema is `db/schema.sql`; this explains the model and its forward-compatible seams.
+> Status: APPROVED current shape at commit `b9d1c5b`. Canonical schema is `db/schema.sql`; this explains the model and its forward-compatible seams.
 
 ## Principles
 
@@ -80,7 +80,7 @@ Reads (open, polled ~2s):
 |---|---|---|
 | GET | `/api/state` | one payload with everything the war room needs: app_state, current lot (player + brief + prior owner; NO valuation unless sold), recent sales, per-manager derived numbers (remaining, max bid, fills), pool role x tier counts, scarcity alerts, phase/rotation info, last-reveal payload, state version |
 | GET | `/api/players?filter...` | the ledger data (valuations only on sold rows) |
-| GET | `/api/recap` | awards plus per-manager spend, leftover war chest and squad count; uses archived leftover values when present |
+| GET | `/api/recap` | awards plus per-manager spend, leftover war chest and final position-grouped squad; uses archived leftover values when present |
 
 Writes (require `Authorization: Bearer COMMISSIONER_TOKEN`):
 
