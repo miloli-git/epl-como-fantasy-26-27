@@ -26,6 +26,7 @@ import {
   SILHOUETTE,
   abbr,
   crestErr,
+  extraStatEntries,
   money,
   photoErr,
   statTiles,
@@ -137,6 +138,11 @@ function PhoneDetail({ payload }: { payload: PlayerDetailPayload }) {
               <div className="sv">{t.v}</div>
               <div className="sk">{t.k}</div>
             </div>
+          ))}
+        </div>
+        <div className="pd-ph-extras">
+          {extraStatEntries(p.stats, p.position).map((e, i) => (
+            <span key={i}><b>{e.v}</b> {e.k}</span>
           ))}
         </div>
       </div>
@@ -269,6 +275,11 @@ function DesktopDetail({ payload }: { payload: PlayerDetailPayload }) {
                       <div className="sv">{t.v}</div>
                       <div className="sk">{t.k}</div>
                     </div>
+                  ))}
+                </div>
+                <div className="b-extras">
+                  {extraStatEntries(p.stats, p.position).map((e, i) => (
+                    <span key={i}><b>{e.v}</b> {e.k}</span>
                   ))}
                 </div>
                 {p.prevComoOwner && (

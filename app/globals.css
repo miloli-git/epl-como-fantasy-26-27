@@ -373,6 +373,8 @@ footer { margin-top: 20px; color: var(--muted); font-size: 12px; }
 .b-stat:first-child { border-left: none; padding-left: 0; }
 .b-stat .sv { font-family: var(--font-display); font-weight: 300; font-size: 42px; letter-spacing: -0.02em; line-height: 1; }
 .b-stat .sk { color: var(--muted); text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; margin-top: 5px; }
+.b-extras { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 14px; color: var(--muted); margin: -8px 0 16px; }
+.b-extras b { color: var(--ink); font-weight: 700; margin-right: 4px; }
 .b-owner { font-size: 15px; margin: 4px 0 16px; }
 .b-owner .k, .b-brief .k { color: var(--muted); text-transform: uppercase; font-size: 11px; letter-spacing: 0.08em; margin-right: 8px; }
 .b-brief { border-top: 1px solid var(--hair); padding-top: 14px; }
@@ -1008,6 +1010,8 @@ a.pd-rowlink { text-decoration: none; color: inherit; }
 .pd-ph-tile:nth-child(3n+1) { border-left: none; padding-left: 0; }
 .pd-ph-tile .sv { font-family: var(--font-display), system-ui, sans-serif; font-weight: 300; font-size: 26px; line-height: 1; }
 .pd-ph-tile .sk { color: var(--muted); text-transform: uppercase; font-size: 9.5px; letter-spacing: 0.05em; margin-top: 4px; }
+.pd-ph-extras { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); margin-top: 12px; }
+.pd-ph-extras b { color: var(--ink); font-weight: 700; margin-right: 3px; }
 .pd-ph-bio { display: grid; grid-template-columns: repeat(4, 1fr); }
 .pd-ph-bio > div { text-align: center; border-left: 1px solid var(--hair); padding: 2px 4px; }
 .pd-ph-bio > div:first-child { border-left: none; }

@@ -63,6 +63,33 @@ export function statTiles(st: SpotlightStats): { v: string | number; k: string }
   ];
 }
 
+/** Extra last-season FPL stats (#59), position-aware so a striker is not shown
+ * "Saves" and a keeper still gets it. All are already-stored totals; missing
+ * values degrade to 0. Rendered as a compact secondary line under the six main
+ * stat tiles on the player page. */
+export type ExtraStats = {
+  cleanSheets: number | null;
+  saves: number | null;
+  pensMissed: number | null;
+  yellows: number | null;
+  reds: number | null;
+};
+export function extraStatEntries(
+  st: ExtraStats,
+  position: string | null | undefined,
+): { v: number; k: string }[] {
+  const out: { v: number; k: string }[] = [];
+  // Saves only for keepers; clean sheets only where FPL scores them (GK/DEF/MID).
+  if (position === "GK") out.push({ v: st.saves ?? 0, k: "Saves" });
+  if (position === "GK" || position === "DEF" || position === "MID") {
+    out.push({ v: st.cleanSheets ?? 0, k: "Clean sheets" });
+  }
+  out.push({ v: st.pensMissed ?? 0, k: "Pens missed" });
+  out.push({ v: st.yellows ?? 0, k: "Yellow" });
+  out.push({ v: st.reds ?? 0, k: "Red" });
+  return out;
+}
+
 /** Club dot colour for a team short_name; a neutral grey when the club is unknown. */
 export function clubDot(teamShort: string | null | undefined): string {
   return washForClub(clubColors as never, teamShort ?? null)?.bandFrom ?? "var(--muted)";

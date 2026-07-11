@@ -109,11 +109,17 @@ try {
 
   // Players: one to sell, one to leave unsold (the requested browse case), one
   // sold-then-traded (to prove owner resolution follows the trade).
+  // SOLD carries distinctive extra-stat totals (#59) so we can assert the whole
+  // last-season stat card surfaces, not just points.
   await sql`
-    insert into players (id, code, web_name, team_short, position, fpl_price, tier, pts)
-    values (${UNSOLD_ID}, ${UNSOLD_ID}, 'Test Unsold', 'TST', 'MID', 9.5, 2, 111),
-           (${SOLD_ID},   ${SOLD_ID},   'Test Sold',   'TST', 'FWD', 12.5, 1, 222),
-           (${TRADED_ID}, ${TRADED_ID}, 'Test Traded', 'TST', 'DEF', 7.5, 3, 88)
+    insert into players (id, code, web_name, team_short, position, fpl_price, tier, pts,
+                         clean_sheets, saves, pens_missed, yellows, reds)
+    values (${UNSOLD_ID}, ${UNSOLD_ID}, 'Test Unsold', 'TST', 'MID', 9.5, 2, 111,
+            null, null, null, null, null),
+           (${SOLD_ID},   ${SOLD_ID},   'Test Sold',   'TST', 'FWD', 12.5, 1, 222,
+            7, 0, 1, 5, 2),
+           (${TRADED_ID}, ${TRADED_ID}, 'Test Traded', 'TST', 'DEF', 7.5, 3, 88,
+            null, null, null, null, null)
   `;
   // Valuations for ALL three - the whole point is that only sold/traded leak.
   await sql`
@@ -191,6 +197,13 @@ try {
     "sold payload's base player object carries no value key",
     findValuationKeys(sold?.player).length === 0,
     findValuationKeys(sold?.player).join(", "),
+  );
+  // (#59) The fuller last-season stat card surfaces from the stored columns.
+  const ss = sold?.player?.stats;
+  report(
+    "sold payload carries the extra last-season stats (cs/saves/pens/cards)",
+    ss?.cleanSheets === 7 && ss?.saves === 0 && ss?.pensMissed === 1 && ss?.yellows === 5 && ss?.reds === 2,
+    `cs=${ss?.cleanSheets} saves=${ss?.saves} pens=${ss?.pensMissed} yel=${ss?.yellows} red=${ss?.reds}`,
   );
 
   // --- (3) TRADED player: owner resolves THROUGH the trade to slot 2 ---
