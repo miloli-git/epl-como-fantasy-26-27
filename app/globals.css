@@ -1364,7 +1364,68 @@ a.ph-prow.ph-prow-link { color: inherit; text-decoration: none; }
 .rc-foot a { color: var(--muted); text-decoration: none; }
 .rc-foot a:hover { color: var(--ink); }
 
+/* Name links reuse the ledger convention (inherit colour, underline on hover). */
+.rc-screen .pd-namelink { color: inherit; text-decoration: none; }
+.rc-screen .pd-namelink:hover { text-decoration: underline; }
+
+/* --- Final squads + FPL Draft entry checklist (#56) --------------------- */
+.rc-squads { margin: 26px 0 4px; }
+.rc-squads-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+}
+.rc-mcard {
+  background: var(--card); border: 1px solid var(--hair);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  margin-bottom: 8px; overflow: hidden;
+}
+.rc-msum {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; font: inherit; text-align: left; cursor: pointer;
+  background: none; border: none; color: var(--ink); padding: 11px 13px;
+}
+.rc-msum-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.rc-chevron {
+  color: var(--muted); font-size: 18px; line-height: 1;
+  transition: transform 0.12s ease; transform: rotate(0deg);
+}
+.rc-chevron.open { transform: rotate(90deg); }
+.rc-mname { font-weight: 700; font-size: 16px; }
+.rc-msub { color: var(--muted); font-size: 13px; }
+.rc-mprog {
+  color: var(--muted); font-size: 12px; font-weight: 700;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.rc-mbody { padding: 2px 13px 12px; border-top: 1px solid var(--hair); }
+.rc-mnote { color: var(--muted); font-size: 12px; margin: 10px 0 6px; }
+.rc-pgroup { margin-top: 10px; }
+.rc-pghead {
+  color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; margin-bottom: 2px;
+}
+.rc-prow-empty { color: var(--muted); font-size: 13px; padding: 4px 2px; }
+.rc-prow {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 2px; border-bottom: 1px solid var(--hair);
+}
+.rc-prow:last-child { border-bottom: none; }
+.rc-check { display: inline-flex; flex: 0 0 auto; }
+.rc-check input { width: 17px; height: 17px; cursor: pointer; accent-color: var(--bronze); }
+.rc-pname { flex: 1 1 auto; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.rc-pmeta { flex: 0 0 auto; color: var(--muted); font-size: 12px; }
+.rc-pprice { flex: 0 0 auto; font-variant-numeric: tabular-nums; font-weight: 700; }
+.rc-pval { flex: 0 0 auto; }
+.rc-pending { color: var(--muted); font-size: 12px; }
+
+.rc-actions { margin-top: 22px; display: flex; gap: 10px; flex-wrap: wrap; }
+.rc-actionlink {
+  font-size: 14px; font-weight: 700; text-decoration: none;
+  background: var(--chip); color: var(--ink);
+  border: 1px solid var(--hair); border-radius: var(--pill); padding: 8px 16px;
+}
+.rc-actionlink:hover { border-color: var(--bronze); }
+
 @media (max-width: 560px) {
   .rc-awards { grid-template-columns: 1fr; }
   .rc-title { font-size: 25px; }
+  .rc-pmeta { display: none; }
 }

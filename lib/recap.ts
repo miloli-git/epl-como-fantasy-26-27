@@ -29,6 +29,30 @@ export interface RecapManager {
   squadCount: number;
 }
 
+/** One player on a manager's final squad (all sold, so value is unsealed). */
+export interface RecapSquadPlayer {
+  id: number;
+  /** FPL-canonical web_name, for entry on draft.premierleague.com. */
+  webName: string | null;
+  /** Disambiguated on-screen label (#44); falls back to webName. */
+  displayName: string | null;
+  teamShort: string | null;
+  position: string | null;
+  tier: number | null;
+  price: number | null;
+  value: number | null;
+  verdict: string | null;
+}
+
+/** A manager's final squad, live-derived (rosters are never archived). */
+export interface RecapSquad {
+  slot: number;
+  short: string;
+  squadCount: number;
+  /** Position order (GK, DEF, MID, FWD) then price desc. */
+  players: RecapSquadPlayer[];
+}
+
 export interface RecapPayload {
   /** Season id from league.config.json. */
   season: string;
@@ -44,6 +68,10 @@ export interface RecapPayload {
   totalLeftover: number;
   /** Sorted by slot. */
   managers: RecapManager[];
+  /** Position quotas (GK/DEF/MID/FWD) for per-position completeness. */
+  squad: Record<string, number>;
+  /** Per-manager final squads, sorted by slot. */
+  squads: RecapSquad[];
   awards: {
     biggestOverpay: RecapAward | null;
     steal: RecapAward | null;
