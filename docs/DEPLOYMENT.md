@@ -1,6 +1,6 @@
 # Deployment - path to production
 
-> Status: **DEPLOYED BETA** at commit `b9d1c5b`, observed 11 Jul 2026. Vercel is green. Production `/api/recap` returns 200 and the browser renders awards, final squads, FPL Draft checklists and the ledger link.
+> Status: **DEPLOYED BETA** at commit `b9d1c5b`, documentation reconciled 15 Jul 2026. Vercel recorded a successful deployment. Runtime observations are dated evidence in `docs/TEST-PLAN.md` and issue #23, not continuing-health claims.
 > Production: [epl-como-fantasy-26-27-cgtd.vercel.app](https://epl-como-fantasy-26-27-cgtd.vercel.app). Target: rehearsed and accepted before the pool freeze (Jul 30-31), auction Aug 2.
 > Ownership: `docs/PRD.md` holds requirements; `docs/TEST-PLAN.md` holds verification method and latest evidence; issue #9 holds live delivery status; issue #23 holds deployment execution evidence.
 
@@ -63,9 +63,9 @@ The one known prerequisite code change, the `LEAGUE_CONFIG_LOCAL` loader, shippe
 2. **Create the Vercel account** - ✅ done 8 Jul (GitHub sign-in, Hobby plan).
 3. **Import the project** - ✅ live through the Vercel GitHub integration.
 4. **Set environment variables** - ✅ `DATABASE_URL`, `COMMISSIONER_TOKEN` and `LEAGUE_CONFIG_LOCAL` are active in production. Keep their values out of this repo.
-5. **Prepare the database** - ✅ live runtime path. Neon serves the real eight-manager roster, 841-player pool and the complete recap payload. Production `/api/recap` returns 200. The issue record does not establish which operational intervention resolved the earlier 500, so do not infer that a specific schema command ran. Production still contains practice state and must be reset before freeze.
-6. **Browser smoke test** - partial. A human observed the production board, recap, trades log and player detail routes rendering. The recap shows awards, final squads, FPL Draft checklists and the ledger link. Still use two physical devices to record a test sale via the console, confirm the board updates within ~2s and the reveal fires, and undo it. Server 200s are not sufficient.
-7. **Payload audit on production** - ✅ observed at `6e2f5f4`: `/api/state` excluded the value from the unsold current lot, `/api/players` returned `value: null` for all 816 unsold players, and a write without the token returned 401. The current deployment is green at `b9d1c5b`; repeat the audit after the production reset/freeze.
+5. **Prepare the database** - ✅ configured and previously observed. Neon served the real eight-manager roster, 841-player pool and recap payload during the recorded 11 Jul smoke. The issue record does not establish which operational intervention resolved the earlier 500, so do not infer that a specific schema command ran. Production still contains practice state and must be reset before freeze.
+6. **Browser smoke test** - partial. A human observed the production board, recap, trades log and player detail routes rendering on 11 Jul. Still use two physical devices to record a test sale via the console, confirm the board updates within ~2s and the reveal fires, and undo it. Server 200s are not sufficient.
+7. **Payload audit on production** - recorded at `6e2f5f4`: `/api/state` excluded the value from the unsold current lot, `/api/players` returned `value: null` for all 816 unsold players, and a write without the token returned 401. Repeat the audit after the production reset/freeze against the release candidate.
 8. **Record the port walk result** in `docs/PORTING.md` and issue #23. If any code change beyond the shipped roster loader was needed, that is a portability bug to fix in the app.
 
 Ongoing until the freeze: re-run `npm run ingest:stats` from the laptop as needed for price/news drift; **pool freeze Jul 30-31** per the locked decision, after which no ingest runs until after the auction.
@@ -99,7 +99,7 @@ The fallback app path uses `npm run build` then `npm start`. `output: standalone
 
 | When | What |
 |---|---|
-| Now | Reconcile issue #23 with the healthy recap; reset/freeze production; repeat the payload audit; complete the two-device mutation check and prepare the physical rehearsal |
+| Now | Merge the documentation reconciliation; align issues #9 and #23; prepare the reset/freeze, post-reset audit, two-device mutation check and physical rehearsal |
 | Run 4 (Jul 28-Aug 1) | Failure drills, runbook + auctioneer cheat sheet, dress rehearsal on the production URL, audit scrub |
 | Jul 30-31 | Pool freeze - final ingest, then the asset caching pass (`npm run assets -- --gentle`) on the serving machine and the fallback laptop, then hands off the player table |
 | Aug 2, morning | Valuations + briefs job; pre-flight checklist; re-run the asset caching pass to pick up any newly published photos |
