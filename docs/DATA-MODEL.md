@@ -1,16 +1,17 @@
 # Data Model
 
-> Status: APPROVED target shape. Canonical schema is `db/schema.sql`; this explains where it is headed. Note: the original scaffold's `picks` table is renamed **`sales`** (same exclusive-ownership idea, auction-night naming).
+> Status: APPROVED current shape at commit `b9d1c5b`. Canonical schema is `db/schema.sql`; this explains the model and its forward-compatible seams.
 
 ## Principles
 
 - **Exclusive ownership is a DB constraint** (`sales.player_id` UNIQUE) - the final backstop against a double-sale, even under concurrent requests.
-- **Derived values are never stored.** Spend, remaining, slot fills, and max bids are computed from sales + trades + config at read time. One source of truth, no sync bugs.
+- **Live values are derived.** Spend, remaining, slot fills and max bids are computed from sales + trades + config at read time. The one deliberate snapshot is the post-auction `season_recap` leftover balance, archived after the auction so later season stages cannot rewrite August's number of record.
 - **Sealed valuations never leave the server pre-sale.** The valuations table is only ever joined into API responses for players with a recorded, non-voided sale. Never ship sealed values to the client and hide them with CSS.
+- **Schema changes are additive.** `db:setup` uses `create table if not exists` plus guarded `add column if not exists` migrations. Re-running setup must preserve live sales and season history.
 
 ## Config layer (the reuse seam)
 
-`league.config.json` holds everything that varies by season/sport: managers (placeholders in the committed file), budget, squad shape, tier bands / opening bids / increments, value-band thresholds, poll interval, reveal duration. A gitignored `league.config.local.json` overrides with the real roster; the two are deep-merged at **runtime**, not build time. Manager count and squad size always derive from config; nothing is hardcoded.
+`league.config.json` holds everything that varies by season/sport: managers (placeholders in the committed file), budget, squad shape, tier bands / opening bids / increments, value-band thresholds, poll interval, reveal duration. A gitignored `league.config.local.json` or the production `LEAGUE_CONFIG_LOCAL` environment variable supplies the real roster; the local file wins when both exist. Overrides are deep-merged at **runtime**, not build time. Manager count and squad size always derive from config; nothing is hardcoded.
 
 ## Tables (target shape)
 
@@ -28,14 +29,15 @@ players        id (FPL element id, snapshotted per season) PK, code (stable PL c
 
 sales          id, player_id -> players (UNIQUE - the exclusive-ownership
                constraint), manager_id -> managers, price (> 0), lot_no,
-               phase (1|2), created_at
+               phase (1|2), stage (default auction-1), created_at
                -- undo/void = DELETE the row (audit row records it); the UNIQUE
                -- constraint then allows a later re-sale. Edits = UPDATE + audit row.
 
 lot_events     id, player_id, event (offered | no_bid | nominated), lot_no, phase,
                created_at   -- NO BID + offer history; drives phase-2 eligibility
 
-trades         id, manager_a, manager_b, cash_a_to_b, cash_b_to_a, created_at, voided
+trades         id, manager_a, manager_b, cash_a_to_b, cash_b_to_a,
+               stage (default auction-1), created_at, voided
 trade_players  trade_id, player_id, from_manager, to_manager
                -- ownership after trades = sales JOIN latest trade movement; an
                -- ownership view resolves player -> current manager and the salary
@@ -45,6 +47,11 @@ valuations     player_id PK, value, generated_at
                -- SEALED: never joined into any response for an unsold player
 
 briefs         player_id PK, bullets (jsonb), swept_at   -- morning news briefs
+
+season_recap   season + manager_slot PK, manager_short, spent, leftover,
+               squad_count, created_at
+               -- idempotent end-of-night snapshot of August's leftover war chest;
+               -- guarded against overwrite once later-stage money rows exist
 
 audit_log      id, actor, action ('sale.create' | 'sale.edit' | 'sale.void' |
                'trade.create' | ...), entity, entity_id, before (jsonb),
@@ -73,6 +80,7 @@ Reads (open, polled ~2s):
 |---|---|---|
 | GET | `/api/state` | one payload with everything the war room needs: app_state, current lot (player + brief + prior owner; NO valuation unless sold), recent sales, per-manager derived numbers (remaining, max bid, fills), pool role x tier counts, scarcity alerts, phase/rotation info, last-reveal payload, state version |
 | GET | `/api/players?filter...` | the ledger data (valuations only on sold rows) |
+| GET | `/api/recap` | awards plus per-manager spend, leftover war chest and final position-grouped squad; uses archived leftover values when present |
 
 Writes (require `Authorization: Bearer COMMISSIONER_TOKEN`):
 

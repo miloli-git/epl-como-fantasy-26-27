@@ -83,19 +83,25 @@ All live in `league.config.json` (public placeholders) merged at runtime with gi
 
 ## Acceptance criteria (v1)
 
-- [ ] `npm run db:setup && npm run ingest` produces a populated, tiered player pool (GK/DEF/MID/FWD only) and seeded managers against a fresh Postgres.
-- [ ] Auctioneer can record a sale; an invalid sale (over max bid, below tier open, no position slot, already owned, squad full) is rejected server-side with a clear reason.
-- [ ] Two browsers (console + board): a sale entered on the console appears on the board within ~2s, and the reveal takeover fires with the sealed value and verdict.
-- [ ] Budget / slot / exclusivity invariants hold after every sale; concurrent sales cannot oversell (live race test, not just unit asserts).
-- [ ] Undo reverses a sale; edit/void of any past sale re-validates and writes an audit row.
-- [ ] A trade moves players, salaries, and cash correctly; both managers' budgets and max bids recalculate; illegal trades are rejected.
-- [ ] Phase 1 to phase 2 transition works: no-bid players remain nominatable; nomination rotation skips full squads; the night ends with all squads 15/15.
-- [ ] Sealed valuations never appear in any API response for an unsold player (verified by inspecting payloads, not just the UI).
-- [ ] Config change (different budget, tiers, squad shape, manager count) is honoured with no code change.
-- [ ] **Port walk:** the Vercel deploy path in `docs/PORTING.md` completes with no code change.
-- [ ] **Browser smoke test:** a human opens the deployed URL and confirms the board renders and updates. (Server 200s are not sufficient.)
+This table distinguishes implementation evidence from final production acceptance. **Verified** means the named automated or recorded check passed at the cited code baseline. **Partial** means the capability exists but an event-readiness observation is still outstanding. Detailed test cases and evidence live in `docs/TEST-PLAN.md`; execution evidence for production and physical drills lives in issue #23.
+
+| # | Criterion | Status at `b9d1c5b` | Evidence or remaining gate |
+|---|---|---|---|
+| 1 | Fresh `db:setup` + ingest produces a populated, tiered pool and seeded managers | Verified | Schema and ingest suites against a fresh scratch Postgres; rerun for the release candidate |
+| 2 | Valid sales record; invalid sales are rejected with a clear reason | Verified | Draft suite covers opening bid, max bid, slots, squad, ownership and token guards |
+| 3 | Console sale reaches a second browser within ~2s and fires the reveal | Partial | Local UI flow verified; formal two-physical-device production observation remains in #23 |
+| 4 | Budget, slot and ownership invariants hold under concurrent sales | Verified | Draft-concurrency suite proves exactly one conflicting sale lands |
+| 5 | Undo, edit and void re-validate and write audit rows | Verified | Corrections suite covers state reversal, validation and before/after audit evidence |
+| 6 | Trades move players, salaries and cash; illegal trades are rejected | Verified | Trade suite covers recalculation, quota, budget, race and audit paths |
+| 7 | Phase transition, no-bids, nomination rotation and 15/15 completion work | Verified | Lot and full-night suites exercise the complete pool to filled squads |
+| 8 | Unsold valuations never appear in API payloads | Verified; repeat at freeze | State, players, player-detail and recap suites plus a recorded production payload audit; repeat after reset/freeze |
+| 9 | Config changes are honoured with no code change | Partial | Loader and production roster override verified; full variant app boot remains |
+| 10 | Vercel port completes without an application rewrite | Partial | Deployed after the known roster-loader change; formal port record and fallback drill remain |
+| 11 | Human browser smoke confirms the deployed board renders and updates | Partial | Read-only browser observation recorded; two-device mutation and update timing remain |
+
+v1 is not production-accepted until every Partial row is cleared and linked from issue #23 at the rehearsed release commit.
 
 ## Deployment
 
-- **Reference:** self-hosted (Docker) against Postgres (container or Neon).
-- **Port target:** Vercel + hosted Postgres. See `docs/HANDOFF.md` and `docs/PORTING.md`.
+- **Production:** Vercel + Neon Postgres at [epl-como-fantasy-26-27-cgtd.vercel.app](https://epl-como-fantasy-26-27-cgtd.vercel.app).
+- **Verified fallback:** `npm run build` then `npm start` on a laptop against Postgres. `output: standalone` supports future container packaging, but this repo does not contain a Dockerfile. See `docs/HANDOFF.md`, `docs/PORTING.md` and `docs/DEPLOYMENT.md`.

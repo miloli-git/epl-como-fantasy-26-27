@@ -4,6 +4,7 @@
 > mechanics not yet ratified by the group. **Nothing here changes v1 or the
 > Aug 2 auction night.** This doc exists so v2 is designed against a written
 > spec and so v1 code leaves the right seams open.
+> Implementation note, 11 Jul: the two v1 seams below are landed in source. Sales and trades carry an additive `stage` tag, and `/recap` plus `season_recap` records the leftover August war chest. A production recap smoke passed on 11 Jul; ongoing runtime evidence belongs in issue #23. The broader wallet model remains a proposal.
 
 ## The idea in one line
 
@@ -63,16 +64,16 @@ carry-over cap (banking money is an intended reward).
 
 ## Consequences for the build
 
-**v1 (Aug 2) is unchanged mechanically.** Two cheap adjustments worth making
-during the current runs:
+**v1 (Aug 2) is unchanged mechanically.** Two forward-compatible adjustments
+landed before the auction:
 
-1. **The recap must headline leftover money (Y1).** It is no longer trivia;
-   it is next February's war chest. The end-of-night archive must record it
-   per manager as a number of record.
-2. **Tag money events with a stage.** Sales, trades, and future waiver and
-   injection rows should carry a stage or event identifier (auction-1,
-   waivers-1, auction-2, waivers-2) so February does not have to untangle
-   August's rows. Adding the column early is cheap; retrofitting is not.
+1. **The recap headlines leftover money (Y1).** `/recap` shows each manager's
+   live war chest and `scripts/archive-recap.mjs` snapshots it into
+   `season_recap` as the end-of-night number of record.
+2. **Money events carry a stage.** Sales and trades now have an additive,
+   non-null `stage` column defaulting to `auction-1`. Future waiver and
+   injection rows can use `waivers-1`, `auction-2` and `waivers-2` without
+   untangling August's rows.
 
 **v2 additions this model implies** (all fit the existing derive-from-ledger
 rule: balances are never stored, always derived from the transaction log):

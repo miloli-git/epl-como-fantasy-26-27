@@ -6,9 +6,9 @@ Three self-contained HTML mockups exploring the visual direction for the auction
 
 | File | View in browser | Candidate | Origin |
 | --- | --- | --- | --- |
-| [01-charcoal-blend.html](01-charcoal-blend.html) | [open rendered](https://miloli-git.github.io/epl-como-fantasy-26-27/design-options/01-charcoal-blend.html) | Charcoal Blend | From the Organiser's group-reviewed walkthrough |
-| [02-daylight-paper.html](02-daylight-paper.html) | [open rendered](https://miloli-git.github.io/epl-como-fantasy-26-27/design-options/02-daylight-paper.html) | Daylight Paper | Light variant exploration, candidate phone/day theme |
-| [03-eggshell-stripe.html](03-eggshell-stripe.html) | [open rendered](https://miloli-git.github.io/epl-como-fantasy-26-27/design-options/03-eggshell-stripe.html) | Eggshell x Stripe | The Builder's system, see [../VISUAL-DESIGN.md](../VISUAL-DESIGN.md) |
+| [01-charcoal-blend.html](01-charcoal-blend.html) | [open rendered](https://kolam-studios.github.io/epl-como-fantasy-26-27/design-options/01-charcoal-blend.html) | Charcoal Blend | From the Organiser's group-reviewed walkthrough |
+| [02-daylight-paper.html](02-daylight-paper.html) | [open rendered](https://kolam-studios.github.io/epl-como-fantasy-26-27/design-options/02-daylight-paper.html) | Daylight Paper | Light variant exploration, candidate phone/day theme |
+| [03-eggshell-stripe.html](03-eggshell-stripe.html) | [open rendered](https://kolam-studios.github.io/epl-como-fantasy-26-27/design-options/03-eggshell-stripe.html) | Eggshell x Stripe | The Builder's system, see [../VISUAL-DESIGN.md](../VISUAL-DESIGN.md) |
 
 Rendered links are served by GitHub Pages from this folder on main.
 

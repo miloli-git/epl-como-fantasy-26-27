@@ -4,15 +4,16 @@ Context for any AI coding agent (Claude Code / Cursor) working this repo.
 
 ## What this is
 
-Config-driven **live auction-draft** tool for a private fantasy league. **v1 target: the auction, in person, Aug 2 2026.** Season scoring never lives here (the official FPL Draft site runs the season). **Public repo** at `github.com/miloli-git/epl-como-fantasy-26-27` - shared tooling only, no real names, no secrets, no private valuation content. Read `docs/PRD.md`, `docs/DESIGN.md`, `docs/DATA-MODEL.md`, `docs/HANDOFF.md` before changing anything.
+Config-driven **live auction-draft** tool for a private fantasy league. **v1 target: the auction, in person, Aug 2 2026.** Season scoring never lives here (the official FPL Draft site runs the season). **Public repo** at `github.com/Kolam-Studios/epl-como-fantasy-26-27` - shared tooling only, no real names, no secrets, no private valuation content. Read `docs/PRD.md`, `docs/DESIGN.md`, `docs/DATA-MODEL.md`, `docs/HANDOFF.md` before changing anything.
 
-## Current state + where to start (2026-07-08)
+## Current state + where to start (2026-07-15)
 
 - **Decisions are made.** The league owners have locked scope: $3,000 x 8 managers, four config-driven tiers, two-phase auction with phase-2 nomination rotation, commissioner-entry bidding, in-auction trades in v1, edit/void any sale with audit, sealed draft-morning valuations revealed at the hammer, war-room model with ~2s polling. `docs/DECISIONS-TO-CONFIRM.md` is the decision table; `docs/PRD.md` and `docs/DESIGN.md` are the requirements of record.
-- **The build is underway** per the plan in [issue #9](https://github.com/miloli-git/epl-como-fantasy-26-27/issues/9). Follow its sprint order; do not invent your own.
+- **A v1 feature beta is deployed** at commit `b9d1c5b`: [production](https://epl-como-fantasy-26-27-cgtd.vercel.app). Core auction flow, corrections, trades, sealed reveals, recap, read-only trade log, #55 phone fix, additive schema migrations, stage tags and expanded standard player stats are implemented. The integrated runner has 16 suites, including the read-only trades suite. Dated runtime observations belong in issue #23 rather than this file. Remaining Aug 2 gates are production reset/freeze, the post-reset audit and the formal two-device, load and physical/fallback rehearsal.
+- **Follow [issue #9](https://github.com/Kolam-Studios/epl-como-fantasy-26-27/issues/9) for live delivery status.** Requirements live in `docs/PRD.md`; verification method and latest evidence live in `docs/TEST-PLAN.md`; deployment execution evidence lives in issue #23. Do not create another status surface.
 - **Where docs conflict, `docs/DESIGN.md` and `docs/PRD.md` are correct** (the max-bid rule reserves the minimum opening bid per open slot, config-driven).
-- Visual design direction is being finalised by the owners - see `docs/VISUAL-DESIGN.md` and `docs/wireframes/` for the current candidate.
-- Run the Vercel port walk (`docs/PORTING.md`) at the END of Sprint 1, not at the end of the project.
+- The current visual design is implemented. See `docs/VISUAL-DESIGN.md` and `docs/wireframes/` for the locked system and reference screens.
+- Vercel, Neon and the real roster override are live. Complete the remaining formal port-walk evidence and physical drills in `docs/PORTING.md` and `docs/TEST-PLAN.md` before acceptance.
 
 ## Human confirmation gates
 
@@ -24,7 +25,7 @@ Decisions for the human driving, not the agent. Stop and ask; never assume, gues
 ## Stack
 
 - Next.js (App Router, TypeScript), Postgres via `postgres` (postgres.js), live updates by polling `/api/state` (~2s).
-- One `DATABASE_URL`. Runs self-hosted (Docker, `output: standalone`) and on Vercel from the same code.
+- One `DATABASE_URL`. Production runs on Vercel. The verified laptop fallback is `npm run build` then `npm start` against Postgres. `output: standalone` supports future container packaging, but no Dockerfile is present in this repo.
 - Claude API for the draft-morning briefs + valuations job only; the auction must run fine without it.
 
 ## Hard rules

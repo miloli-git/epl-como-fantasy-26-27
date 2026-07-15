@@ -1,16 +1,16 @@
 # Deployment - path to production
 
-> Status: **APPROVED** (decisions locked with the league owner, 8 Jul 2026).
-> Target: production live and rehearsed before the pool freeze (Jul 30-31), auction Aug 2.
-> Companion docs: `docs/PORTING.md` (the mechanical Vercel walk), `docs/TEST-PLAN.md` (verification), issue #9 (run plan - this is Run 4's spec).
+> Status: **DEPLOYED BETA** at commit `b9d1c5b`, documentation reconciled 15 Jul 2026. Vercel recorded a successful deployment. Runtime observations are dated evidence in `docs/TEST-PLAN.md` and issue #23, not continuing-health claims.
+> Production: [epl-como-fantasy-26-27-cgtd.vercel.app](https://epl-como-fantasy-26-27-cgtd.vercel.app). Target: rehearsed and accepted before the pool freeze (Jul 30-31), auction Aug 2.
+> Ownership: `docs/PRD.md` holds requirements; `docs/TEST-PLAN.md` holds verification method and latest evidence; issue #9 holds live delivery status; issue #23 holds deployment execution evidence.
 
-This doc assumes no prior familiarity with the platforms. It names every decision, every account, and every credential - and where each one lives.
+This doc describes the production path, accounts, credentials and night-of resilience. Keep execution checkboxes and measured results in issue #23 rather than creating another status surface.
 
 ## What runs where (the picture)
 
 The app is a **Next.js website** backed by a **Postgres database**. In production:
 
-- **Vercel** hosts the website. It connects to GitHub, watches this repo, and automatically rebuilds and publishes the site every time code lands on `main`. Free (Hobby) tier - sufficient for 8 managers + a TV polling every 2 seconds.
+- **Vercel** hosts the website at [the stable production URL](https://epl-como-fantasy-26-27-cgtd.vercel.app). It connects to GitHub, watches this repo, and automatically rebuilds and publishes the site every time code lands on `main`. Free (Hobby) tier - sufficient for the intended room size, subject to the pending sustained-load check.
 - **Neon** hosts the Postgres database - the system of record on the night. Free tier. The app reaches it through a single secret connection string (`DATABASE_URL`).
 - **Anthropic (Claude API)** generates the draft-morning sealed valuations and news briefs. Run as a script from a laptop on draft morning; the auction runs fine without it.
 - **FPL public API** supplies the player pool via `npm run ingest`, run from a laptop against the production database. No account needed.
@@ -22,11 +22,11 @@ The app is a **Next.js website** backed by a **Postgres database**. In productio
 | Web host | Vercel, Hobby tier, owned by the league's deployment owner | Locked at kickoff; Next.js is first-class there; free tier fits 8 users |
 | Deploy trigger | GitHub integration - push to `main` auto-deploys | No manual deploy step to forget; previews per branch for free |
 | Database | Neon free tier (created 8 Jul) | One connection string; no idle-pause surprise on auction morning (Supabase free tier pauses after 7 idle days); available as a Vercel-native integration |
-| Domain | Free `*.vercel.app` address | Everyone opens it once from a shared link/QR; TV set up in advance |
+| Domain | Stable `epl-como-fantasy-26-27-cgtd.vercel.app` alias | Everyone opens the stable alias once from a shared link/QR; TV set up in advance |
 | Claude API | Existing Anthropic Console key (`como-draft`, created 8 Jul) | Reuses existing credits; features degrade gracefully if absent |
 | Night resilience | Cloud primary + rehearsed laptop fallback | See "Auction-night resilience" below |
 | Auctioneer | A neutral non-manager | Matches the PRD's neutral-operator model; commissioner token goes to their device only, on the night |
-| Real roster on Vercel | `LEAGUE_CONFIG_LOCAL` env var holding the JSON override | Vercel builds from the public repo and can't see the gitignored `league.config.local.json`; the config loader needs a small change to read this env var (issue #22, lands in the next build run) |
+| Real roster on Vercel | `LEAGUE_CONFIG_LOCAL` env var holding the JSON override | Vercel cannot see the gitignored local file; the env loader shipped in `1a2c550` and is active in production |
 
 ## Accounts checklist
 
@@ -35,7 +35,7 @@ The app is a **Next.js website** backed by a **Postgres database**. In productio
 | GitHub | ✅ exists | deployment owner | Collaborator access on this repo is in place (confirmed 9 Jul); Vercel signs in with this account |
 | Neon (neon.tech) | ✅ created 8 Jul | deployment owner | Free tier; holds the production database |
 | Anthropic Console (console.anthropic.com) | ✅ existing key `como-draft` | deployment owner | Small credit balance covers valuations + briefs (realistically a few dollars for ~840 players) |
-| Vercel (vercel.com) | ✅ created 8 Jul (GitHub sign-in, Hobby) | deployment owner | Remaining work is project import + env vars only, scheduled for Run 4 (Jul 28-Aug 1) per issue #9 unless brought forward |
+| Vercel (vercel.com) | ✅ live | deployment owner | Project imported, production env set and commit `b9d1c5b` deployed successfully through the GitHub integration |
 
 ## Credentials - what exists and where it lives
 
@@ -57,16 +57,16 @@ Rules that keep this safe (also in `CLAUDE.md`):
 
 ## Path to production (the steps, in order)
 
-Prerequisite code change: the config loader must read `LEAGUE_CONFIG_LOCAL` (see the roster issue). Everything else requires **zero code change** - that's an acceptance criterion.
+The one known prerequisite code change, the `LEAGUE_CONFIG_LOCAL` loader, shipped in `1a2c550`. Formal port-walk closure must confirm that no further source change was required.
 
 1. **Collaborator access** - ✅ done 9 Jul.
 2. **Create the Vercel account** - ✅ done 8 Jul (GitHub sign-in, Hobby plan).
-3. **Import the project** - Vercel dashboard → Add New → Project → pick `epl-como-fantasy-26-27`. Vercel auto-detects Next.js; accept the defaults. The first deploy will build but render placeholder data until env is set. (10 min)
-4. **Set environment variables** - Vercel project → Settings → Environment Variables. Add `DATABASE_URL`, `COMMISSIONER_TOKEN`, `LEAGUE_CONFIG_LOCAL` (paste the JSON from `league.config.local.json`), scope: Production. Redeploy (Deployments → ⋯ → Redeploy) so they take effect. (10 min)
-5. **Prepare the database** - from the deployment owner's laptop, with `.env` pointing at the Neon `DATABASE_URL`: `npm run db:setup` then `npm run ingest`. This applies the schema, seeds managers, and loads the player pool into the production database. (10 min)
-6. **Browser smoke test** - open the `*.vercel.app` URL on two devices; record a test sale via the console with the token; confirm the board updates within ~2s and the reveal fires; then undo it. Server 200s are not sufficient - a human watches the board. (10 min)
-7. **Payload audit on production** - fetch `/api/state` from the deployed URL and confirm no sealed valuation appears for any unsold player, and that writes without the token are refused. (Scripted in `docs/TEST-PLAN.md`.)
-8. **Record the port walk result** in `docs/PORTING.md` - if any code change beyond the roster loader was needed, that's a portability bug to fix in the app.
+3. **Import the project** - ✅ live through the Vercel GitHub integration.
+4. **Set environment variables** - ✅ `DATABASE_URL`, `COMMISSIONER_TOKEN` and `LEAGUE_CONFIG_LOCAL` are active in production. Keep their values out of this repo.
+5. **Prepare the database** - ✅ configured and previously observed. Neon served the real eight-manager roster, 841-player pool and recap payload during the recorded 11 Jul smoke. The issue record does not establish which operational intervention resolved the earlier 500, so do not infer that a specific schema command ran. Production still contains practice state and must be reset before freeze.
+6. **Browser smoke test** - partial. A human observed the production board, recap, trades log and player detail routes rendering on 11 Jul. Still use two physical devices to record a test sale via the console, confirm the board updates within ~2s and the reveal fires, and undo it. Server 200s are not sufficient.
+7. **Payload audit on production** - recorded at `6e2f5f4`: `/api/state` excluded the value from the unsold current lot, `/api/players` returned `value: null` for all 816 unsold players, and a write without the token returned 401. Repeat the audit after the production reset/freeze against the release candidate.
+8. **Record the port walk result** in `docs/PORTING.md` and issue #23. If any code change beyond the shipped roster loader was needed, that is a portability bug to fix in the app.
 
 Ongoing until the freeze: re-run `npm run ingest:stats` from the laptop as needed for price/news drift; **pool freeze Jul 30-31** per the locked decision, after which no ingest runs until after the auction.
 
@@ -93,21 +93,21 @@ Primary: the Vercel URL over venue internet. Rehearsed fallback (part of the Run
 - **Neon is down (rarest):** pre-night `pg_dump` snapshot + a local Postgres (Docker) on the laptop as cold standby; the drill for restoring is written in the runbook before the rehearsal.
 - Paper ledger printout of budgets/rosters as the absolute last resort, reconciled into the app afterwards (edit/void exists for exactly this).
 
-The fallback drill gets a timed rehearsal during Run 4 - it doesn't count as a plan until it's been executed once.
+The fallback app path uses `npm run build` then `npm start`. `output: standalone` can support future container packaging, but this repo has no Dockerfile. The hotspot, laptop and cold-standby drills remain pending and do not count until each is executed and timed.
 
 ## Timeline (maps to issue #9)
 
 | When | What |
 |---|---|
-| Now (Run 2-3 window) | Vercel account + project + env; roster env-var code change lands; production DB prepared; first smoke test. Running the port walk early de-risks Run 4 - nothing about it depends on the UI runs |
+| Now | Merge the documentation reconciliation; align issues #9 and #23; prepare the reset/freeze, post-reset audit, two-device mutation check and physical rehearsal |
 | Run 4 (Jul 28-Aug 1) | Failure drills, runbook + auctioneer cheat sheet, dress rehearsal on the production URL, audit scrub |
 | Jul 30-31 | Pool freeze - final ingest, then the asset caching pass (`npm run assets -- --gentle`) on the serving machine and the fallback laptop, then hands off the player table |
 | Aug 2, morning | Valuations + briefs job; pre-flight checklist; re-run the asset caching pass to pick up any newly published photos |
 | Aug 2, night | The auction. Token to the auctioneer; fallback laptop in the room |
-| Aug 3+ | Rotate `COMMISSIONER_TOKEN`; archive the ledger (recap page is the permanent record) |
+| Aug 3+ | Rotate `COMMISSIONER_TOKEN`; run the recap archive and preserve the final ledger |
 
 ## Open items
 
-1. **Roster env override** - code change to the config loader (issue #22, scheduled for the next build run; must land before the production deploy is real).
+1. **Acceptance evidence** - production reset/freeze and post-reset audit; formal two-device sale/reveal/undo; 10-tab sustained load; physical TV, hotspot, laptop and cold-standby drills. The scratch workflow is documented in `docs/TEST-RUN-RESET.md`; execution evidence remains in issue #23.
 2. **Auctioneer identity** - decided as "a neutral non-manager"; the specific person to be confirmed by Jul 28 so the cheat-sheet handoff and token delivery are planned.
 3. **2025 rosters** for the prior-owner line - still being hunted; feature hides gracefully without it.

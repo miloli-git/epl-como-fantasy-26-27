@@ -1,6 +1,7 @@
 # Porting - NAS reference → Vercel
 
 > The portability claim is a v1 acceptance criterion, not a hope. This walk must complete with **no code change**. If it doesn't, that's a bug to fix in the app, not to patch around in the deploy.
+> Observed 11 Jul 2026: commit `b9d1c5b` deployed at [epl-como-fantasy-26-27-cgtd.vercel.app](https://epl-como-fantasy-26-27-cgtd.vercel.app) with Neon and the real roster override. The deployment, recap and read-only viewer smoke passed on that date. Operational and formal port-walk closure remain pending.
 
 ## Why it ports cleanly
 
@@ -8,24 +9,32 @@
 |---|---|
 | Long-lived WebSocket server | live updates by polling `/api/state` |
 | Local SQLite on ephemeral FS | Postgres via `DATABASE_URL` |
-| Custom Node server | Next.js App Router (`output: standalone` for Docker; Vercel uses its own build) |
+| Custom Node server | Next.js App Router; Vercel uses its native build. `output: standalone` can support future container packaging, but this repo has no Dockerfile |
 | Background workers | FPL ingest is a plain `npm run ingest` script |
 
 ## The walk (the porter's agent runs this)
 
 1. Clone the repo. Read `CLAUDE.md`, `docs/HANDOFF.md`, `docs/DATA-MODEL.md`.
 2. Provision Postgres (Neon/Supabase free tier).
-3. In Vercel project settings, set env: `DATABASE_URL`, `COMMISSIONER_TOKEN`.
+3. In Vercel project settings, set env: `DATABASE_URL`, `COMMISSIONER_TOKEN`, `LEAGUE_CONFIG_LOCAL`.
 4. Locally against the hosted DB: `npm install` → `npm run db:setup` → `npm run ingest`.
-5. `vercel deploy`. Expect zero source changes.
-6. Set the real roster: Vercel can't read the gitignored `league.config.local.json`. **Decided (8 Jul 2026):** the config loader reads a `LEAGUE_CONFIG_LOCAL` env var containing the same JSON, applied with the same deep merge, with the local file taking precedence when both exist. Paste the file's contents into that Vercel env var. (Loader change tracked as an issue until it lands.)
+5. Deploy through the Vercel GitHub integration. Expect zero source changes after the roster loader in `1a2c550`.
+6. Set the real roster: Vercel can't read the gitignored `league.config.local.json`. The shipped config loader reads a `LEAGUE_CONFIG_LOCAL` env var containing the same JSON, applies the same deep merge, and gives the local file precedence when both exist. Paste the file's contents into that Vercel env var.
 7. **Verify in a browser:** open the deployed URL, record a sale on the commissioner panel, confirm it appears on the board view within ~2s.
+
+## Current evidence (11 Jul 2026)
+
+- Vercel reports a successful production deployment for commit `b9d1c5b` through the stable production URL.
+- The app is connected to Neon and renders the real eight-manager override plus the 841-player pool.
+- Read-only production checks observed the board and read routes rendering, no non-null value for any of 816 unsold players, and a 401 for an unauthenticated write.
+- On 11 Jul, production `/api/recap` returned 200 and the browser rendered awards, final squads, FPL Draft checklists and the ledger link; `/trades` and player detail also rendered. This is dated port evidence, not a continuing-health assertion.
+- Still required for closure: reset/freeze production and repeat the audit against the release candidate, record that no source change beyond the already-shipped roster loader was needed, run the two-device sale/reveal/undo check, then complete the sustained-load and physical/fallback drills in `docs/TEST-PLAN.md`.
 
 ## If a code change was required
 
 Log it as an issue and fix the *app* so the next port is clean. Record the failure here so the claim stays honest.
 
-## Self-host (reference, for parity)
+## Laptop fallback and future packaging
 
-- `docker build` with `output: standalone`; pass `DATABASE_URL` + `COMMISSIONER_TOKEN` as env (volume-mount or env file - do not bake secrets into the image).
-- Recreate a running container with `docker compose up -d --force-recreate` (plain `--build` will NOT replace a running container).
+- The verified fallback path is `npm run build` then `npm start`, with `DATABASE_URL` and `COMMISSIONER_TOKEN` provided through the environment.
+- `output: standalone` provides the build seam for future container packaging. No Dockerfile or Compose file is present, so Docker app hosting is not currently a packaged or verified repo capability.

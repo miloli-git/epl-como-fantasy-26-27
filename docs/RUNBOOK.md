@@ -2,6 +2,7 @@
 
 > Held by the **runbook person** - someone other than the auctioneer - all night. Your job is to absorb any technical problem so the auctioneer never stops running the room.
 > Companion docs: `docs/AUCTIONEER-CHEATSHEET.md` (running the console), `docs/PREFLIGHT.md` (checks before the room fills), `docs/DEPLOYMENT.md` (the platform picture behind all of this).
+> Readiness evidence belongs in GitHub issue #23. A written step or unchecked item here is not evidence that the drill has run.
 
 ## The one thing to remember
 
@@ -119,6 +120,7 @@ Done once, ahead of time, so the sections above actually work:
 - [ ] The **fallback laptop** has the repo, `npm install` done, `.env` pointing at the production database, and Docker installed.
 - [ ] You have run **section 3** (laptop serves the site) once and seen it work.
 - [ ] You have run **section 4** (snapshot restore) once and seen it work.
+- [ ] You have timed the **hotspot and section 3 fallback** with the TV and auctioneer device attached; target under ten minutes.
 - [ ] A **database snapshot** command is ready to run late on the night (Docker only, no `pg_dump` to install):
   `docker run --rm postgres:16 pg_dump "<production DATABASE_URL>" > como-snapshot.sql` - take it shortly before the auction, and again at any break.
 - [ ] A **printed paper ledger** (eight managers, budgets) is in the room.
@@ -127,4 +129,5 @@ Done once, ahead of time, so the sections above actually work:
 ## After the night
 
 - [ ] **Rotate the commissioner token:** change it in the host env and redeploy, so the night's token no longer works.
-- [ ] The results live in the database and on the ledger screen - that is the permanent record. No extra archiving step is required for v1.
+- [ ] Run the recap archive once, confirm the final squads, leftover balances, awards and ledger link, and record the accepted release commit in issue #23.
+- [ ] Preserve the final ledger and database snapshot as the permanent record.

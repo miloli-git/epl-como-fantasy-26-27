@@ -1,13 +1,13 @@
-# Handoff - Reference build and Vercel port
+# Handoff - Application and Vercel deployment
 
-> Status: DRAFT for review.
+> Status: Vercel beta deployed at commit `b9d1c5b`; recap and read-only viewer smoke were recorded on 11 Jul, while final rehearsal and acceptance remain pending.
 
-Repo: `github.com/miloli-git/epl-como-fantasy-26-27` (public, MIT). v1 scope is the **live auction only** (in person, Aug 2 2026); season scoring + rebids are deferred.
+Repo: `github.com/Kolam-Studios/epl-como-fantasy-26-27` (public, MIT). Production: [epl-como-fantasy-26-27-cgtd.vercel.app](https://epl-como-fantasy-26-27-cgtd.vercel.app). v1 scope is the **live auction only** (in person, Aug 2 2026); season scoring + rebids are deferred.
 
 ## The split
 
-- **Maintainer** builds the reference app and runs it self-hosted (Docker + Postgres). This repo is the source of truth.
-- **Porter** has no homelab. Their AI coding agent **clones this repo, reviews it, and ports the deploy to a Vercel-equivalent.** The stack is chosen so this is a deploy-target swap, not a rewrite.
+- **Maintainer** builds the application and owns its requirements and verification record in this repo.
+- **Deployment owner** runs the Vercel + Neon production path and records execution evidence in issue #23. The stack keeps the laptop fallback a build-and-start operation, not a rewrite.
 
 ## Why the port is cheap
 
@@ -17,17 +17,18 @@ Every piece that would normally break a serverless port has been avoided up fron
 |---|---|---|
 | Long-lived WebSocket server | live updates by **polling** `/api/state` | no server to host; works on serverless unchanged |
 | Local SQLite file on ephemeral FS | **Postgres** via a `DATABASE_URL` | same connection string from self-host or Vercel |
-| Custom Node server | **Next.js** App Router | first-class on Vercel; self-hosts via `output: standalone` |
+| Custom Node server | **Next.js** App Router | first-class on Vercel; `npm run build` + `npm start` is the verified laptop fallback |
 | Background workers | FPL ingest is a **plain script** (`npm run ingest`) | run manually or as a cron |
 
 ## Porter's agent - port checklist
 
-See `docs/PORTING.md` for the full walk. In short: clone → provision Postgres → set env → `db:setup` + `ingest` → `vercel deploy` → verify in a browser. No source change should be required; if one is, that's a portability bug to fix in the app.
+See `docs/PORTING.md` for the full walk. Vercel recorded the `b9d1c5b` deployment against Neon with the real roster override; the read-only production audit was recorded at `6e2f5f4`, and the recap and viewer routes were observed on 11 Jul. These are dated handoff observations. The remaining gate is to reset/freeze production, repeat the audit against the release candidate, then record the two-device sale/reveal/undo check, sustained load and physical/fallback drills. No further source change should be required after the shipped roster loader; if one is, that is a portability bug to fix in the app.
 
 ## What is reference-only vs portable
 
 - **Portable (ships as-is):** all app code, schema, config, ingest, API routes.
-- **Reference-only (not in this repo):** the maintainer's Docker/compose, any reverse-proxy/Cloudflare routing, and any private valuation/projection work. The porter doesn't need these.
+- **Fallback:** `npm run build` then `npm start` against Postgres. `output: standalone` supports future container packaging, but this repo has no Dockerfile or Compose file.
+- **Private and external:** any reverse-proxy routing, environment credentials and private valuation/projection work stay outside this public repo.
 
 ## Confidentiality
 

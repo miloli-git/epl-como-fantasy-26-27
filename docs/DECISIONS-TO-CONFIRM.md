@@ -25,12 +25,13 @@
 | 17 | Scoring | **Never in the app.** The official FPL Draft site runs the season |
 | 18 | Roadmap | v1 = auction night (Aug 2 2026). v2 = in-season rebid rounds (parameters TBD with the group). v3 = historical archive import |
 
-Also resolved along the way: repo is public (`github.com/miloli-git/epl-como-fantasy-26-27`, MIT); pool source is FPL `bootstrap-static`; formation/pitch view is out of v1 (squads are slot counts during the auction); real names never enter the repo (placeholder config + gitignored local roster).
+Also resolved along the way: repo is public (`github.com/Kolam-Studios/epl-como-fantasy-26-27`, MIT); pool source is FPL `bootstrap-static`; formation/pitch view is out of v1 (squads are slot counts during the auction); real names never enter the repo (placeholder config + gitignored local roster).
+
+Hosting is resolved: Vercel is the cloud primary, with a verified `npm run build` plus `npm start` laptop fallback. The physical fallback drills remain pending.
 
 ## Still open (none block the build)
 
 - Neutral auctioneer for the night (a people problem, not software).
 - Pool-freeze date (FPL prices/squads settle late July; ingest is re-runnable until frozen, then guarded).
-- Hosting for the night: Vercel URL vs self-hosted - same code either way.
 - Prior-season roster data for the owner line (feature hides if absent).
 - v2 rebid parameters.

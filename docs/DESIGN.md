@@ -127,6 +127,6 @@ So a manager with money but no empty GK slot **cannot** bid on a GK. When a mana
 - Five surfaces off one component tree; console actions gated by `COMMISSIONER_TOKEN`.
 - Sealed valuations are sealed **server-side**: never in a payload for an unsold player.
 
-## Still open (build-time, not blocking)
+## Hosting (resolved)
 
-- Hosting for the night (Vercel URL vs self-hosted) - same code either way.
+- Vercel is the cloud primary. The verified laptop fallback is `npm run build` plus `npm start` against Postgres. Physical fallback drills remain pending.
