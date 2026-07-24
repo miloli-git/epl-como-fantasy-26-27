@@ -3,8 +3,19 @@
 //
 // Usage:
 //   node --env-file=.env scripts/ingest-fpl.mjs               full ingest (refused once frozen/sold)
+//   node --env-file=.env scripts/ingest-fpl.mjs --prune       full ingest, THEN delete players the feed no longer lists
 //   node --env-file=.env scripts/ingest-fpl.mjs --stats-only  refresh stat columns + ranks for EXISTING ids only
 //   node --env-file=.env scripts/ingest-fpl.mjs --freeze      set app_state.pool_frozen = true, nothing else
+//
+// WHY --prune EXISTS (new-season rollover): a full ingest is upsert-only, so
+// running it across a season boundary leaves last season's departed players in
+// the table - priced, tiered and still nominatable. The 26/27 feed carries 555
+// players where 25/26 ended at ~840. Worse, FPL reassigns element ids each
+// season, so a stale row is not merely dead weight: a new id can land on a row
+// that used to mean a different player. --prune deletes every player the feed
+// no longer lists (and their briefs, valuations and lot events) so the pool is
+// exactly the current season's list. It is opt-in because it is destructive;
+// the ingest guard already refuses to run at all once any sale exists.
 //
 // Ingest guard (issue #5): once the pool is frozen or any sale exists, a full
 // ingest could change positions/tiers/prices mid-draft and corrupt quotas, so
@@ -30,13 +41,21 @@ if (!url) {
 const args = process.argv.slice(2);
 const statsOnly = args.includes("--stats-only");
 const freeze = args.includes("--freeze");
-const unknown = args.filter((a) => a !== "--stats-only" && a !== "--freeze");
+const prune = args.includes("--prune");
+const KNOWN = ["--stats-only", "--freeze", "--prune"];
+const unknown = args.filter((a) => !KNOWN.includes(a));
 if (unknown.length > 0) {
-  console.error(`Unknown flag(s): ${unknown.join(", ")}. Supported: --stats-only, --freeze.`);
+  console.error(`Unknown flag(s): ${unknown.join(", ")}. Supported: ${KNOWN.join(", ")}.`);
   process.exit(1);
 }
 if (statsOnly && freeze) {
   console.error("--stats-only and --freeze cannot be combined.");
+  process.exit(1);
+}
+if (prune && (statsOnly || freeze)) {
+  console.error(
+    "--prune only applies to a full ingest; it cannot be combined with --stats-only or --freeze.",
+  );
   process.exit(1);
 }
 
@@ -252,6 +271,34 @@ try {
             n += chunk.length;
           }
           console.log(`ingested ${n} players from FPL`);
+
+          if (prune) {
+            // Delete every player the current feed no longer lists, and any
+            // satellite rows that reference them. Order matters: children
+            // first, players last. sales/trade_players are deliberately NOT
+            // touched - the guard re-checked above means none can exist for
+            // an unlocked pool, and if that invariant ever breaks the FK on
+            // sales.player_id will (correctly) abort this transaction rather
+            // than let a prune erase auction history.
+            const feedIds = rows.map((r) => r.id);
+            const pruned = await sql.begin(async (tx) => {
+              const stale = await tx`
+                select id, web_name from players
+                where id not in ${tx(feedIds)}`;
+              if (stale.length === 0) return [];
+              const staleIds = stale.map((s) => s.id);
+              await tx`delete from briefs where player_id in ${tx(staleIds)}`;
+              await tx`delete from valuations where player_id in ${tx(staleIds)}`;
+              await tx`delete from lot_events where player_id in ${tx(staleIds)}`;
+              await tx`delete from players where id in ${tx(staleIds)}`;
+              return stale;
+            });
+            console.log(
+              pruned.length === 0
+                ? "prune: nothing to remove - every player in the table is in the current feed."
+                : `pruned ${pruned.length} players no longer in the FPL feed.`,
+            );
+          }
         }
       }
     }

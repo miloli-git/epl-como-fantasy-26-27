@@ -14,8 +14,12 @@ import {
   tradeCashByManager,
 } from "../lib/derive-core.mjs";
 
-// Same shape as league.config.json (budget 3000, minOpenBid 5) so the mockup
-// fixtures line up. Built through buildConfig so it is a validated config.
+// A DELIBERATELY INDEPENDENT fixture (budget 3000, four bands, minOpenBid 5):
+// the maxBid numbers below are hand-calculated against a $5 reserve, and the
+// point of a fixture is to pin the math, not to track whatever the league
+// happens to be running this season. The real league.config.json now carries a
+// fifth $1 band; `cfgTier5` further down proves the reserve follows config.
+// Built through buildConfig so it is a validated config.
 const cfg = buildConfig({
   season: "test",
   sport: "epl",
@@ -90,6 +94,45 @@ function ownedRows(managerId, count, total, positions) {
 {
   const d = deriveManager(cfg, ownedRows(4, 15, 2900, ["GK", "GK", "DEF", "DEF", "DEF", "DEF", "DEF", "MID", "MID", "MID", "MID", "MID", "FWD", "FWD", "FWD"]));
   eq("maxBid: full squad -> null + squadComplete", [d.maxBid, d.squadComplete, d.openSlots], [null, true, 0]);
+}
+
+// --- the reserve follows the config's lowest band, with no code change ---
+// This is the mechanical half of the rules-review decision: adding a $1 Tier 5
+// must drop the max-bid reserve from $5 to $1 per other open slot by itself.
+// Same manager, same money, same slots - only the config differs.
+{
+  const cfgTier5 = buildConfig({
+    season: "test",
+    sport: "epl",
+    managers: ["A", "B", "C", "D", "E", "F", "G", "H"],
+    budget: 3000,
+    squad: { GK: 2, DEF: 5, MID: 5, FWD: 3 },
+    tiers: [
+      { tier: 1, minFplPrice: 12.0, openBid: 50 },
+      { tier: 2, minFplPrice: 9.0, openBid: 25 },
+      { tier: 3, minFplPrice: 7.0, openBid: 10 },
+      { tier: 4, minFplPrice: 5.6, openBid: 5 },
+      { tier: 5, minFplPrice: 0, openBid: 1 },
+    ],
+    bidIncrement: null,
+    valueBadgeThreshold: 50,
+    scarcityThreshold: 2,
+    pollMs: 2000,
+    revealMs: 8000,
+  });
+  // 7 owned, spent 2667 -> remaining 333, 8 open slots, 7 of them "other".
+  const owned = ownedRows(6, 7, 2667, ["GK", "DEF", "DEF", "MID", "MID", "FWD", "FWD"]);
+  const atFive = deriveManager(cfg, owned);
+  const atOne = deriveManager(cfgTier5, owned);
+  eq("reserve: $5 config holds back 7 x $5", [atFive.remaining, atFive.maxBid], [333, 298]);
+  eq("reserve: $1 config holds back 7 x $1", [atOne.remaining, atOne.maxBid], [333, 326]);
+  // The whole squad-completion guarantee in one line: whatever the reserve is,
+  // spending maxBid must still leave the minimum open bid for every other slot.
+  eq(
+    "reserve: spending maxBid still affords every remaining slot",
+    atOne.remaining - atOne.maxBid,
+    (atOne.openSlots - 1) * 1,
+  );
 }
 
 // --- eligibility: FWD quota filled -> ineligible FWD, eligible MID ---
