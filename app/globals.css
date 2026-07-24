@@ -16,6 +16,10 @@
   --vg: #1B7A45;          /* value good */
   --vb: #B3402E;          /* value bad / overpay */
   --vf: #8A6D1C;          /* value flat / fair */
+  --pos-gk: #0E8F9C;      /* position marker: goalkeeper */
+  --pos-def: #2D6CDF;     /* position marker: defender */
+  --pos-mid: #2E8B57;     /* position marker: midfielder */
+  --pos-fwd: #C0392B;     /* position marker: forward */
   --up: rgba(16, 185, 120, 0.13);
   --down: rgba(223, 74, 50, 0.12);
   --flat: rgba(217, 154, 27, 0.14);
@@ -344,7 +348,7 @@ footer { margin-top: 20px; color: var(--muted); font-size: 12px; }
 .b-mgr.hot { box-shadow: inset 0 3px 0 var(--cb-from, var(--bronze)); }
 .b-mgr.done { opacity: 0.45; }
 .b-mgr .mn { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 13px; }
-.b-mgr .mrem { float: right; color: var(--muted); font-family: var(--font-body); font-weight: 400; font-size: 13px; letter-spacing: 0; }
+.b-mgr .mmax { float: right; color: var(--muted); font-family: var(--font-body); font-weight: 400; font-size: 13px; letter-spacing: 0; }
 .b-mgr .mr { font-family: var(--font-display); font-weight: 300; font-size: 36px; letter-spacing: -0.03em; margin-top: 4px; }
 .b-mgr .mf { color: var(--muted); font-size: 12px; letter-spacing: 0.03em; margin-top: 10px; }
 
@@ -442,9 +446,22 @@ footer { margin-top: 20px; color: var(--muted); font-size: 12px; }
 .sq .val .v { font-family: var(--font-display); font-weight: 300; font-size: 29px; letter-spacing: -0.02em; }
 .sq .val .v.sealed { font-size: 20px; }
 .sq .val .pill { margin-left: auto; font-size: 15px; padding: 3px 13px; }
-.sq .pr { display: grid; grid-template-columns: 12px 1fr 34px 56px; gap: 9px; padding: 5px 0; font-size: 15.5px; border-bottom: 1px solid var(--hair); align-items: center; }
+.sq .pr { display: grid; grid-template-columns: 17px 1fr 34px 56px; gap: 9px; padding: 5px 0; font-size: 15.5px; border-bottom: 1px solid var(--hair); align-items: center; }
 .sq .pr:last-of-type { border-bottom: none; }
 .sq .cdot { width: 9px; height: 9px; border-radius: 50%; }
+
+/* Position marker (#67): a colour-coded letter (G/D/M/F), coloured by position
+   not team, used on the squads rows. */
+.posmark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 17px; height: 17px; border-radius: 4px;
+  font-family: var(--font-display); font-weight: 700; font-size: 10.5px;
+  line-height: 1; letter-spacing: 0; color: #fff;
+}
+.posmark.gk { background: var(--pos-gk); }
+.posmark.def { background: var(--pos-def); }
+.posmark.mid { background: var(--pos-mid); }
+.posmark.fwd { background: var(--pos-fwd); }
 .sq .tn { font-family: var(--font-display); font-weight: 700; font-size: 10.5px; color: var(--muted); }
 .sq .p { text-align: right; font-weight: 600; }
 .sq .more { font-size: 13px; color: var(--muted); padding-top: 7px; margin-top: auto; }

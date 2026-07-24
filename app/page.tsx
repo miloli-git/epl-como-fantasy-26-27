@@ -501,7 +501,7 @@ export default function Board() {
               </div>
             </div>
 
-            {/* BOTTOM: manager strip (max bid big, remaining small, quota fills) */}
+            {/* BOTTOM: manager strip (remaining budget big, max bid small top-right, quota fills) */}
             <div className="b-mgrs">
               {payload!.managers.map((m) => {
                 const size = m.squad.length + m.openSlots;
@@ -512,15 +512,15 @@ export default function Board() {
                   <div key={m.slot} data-testid={`manager-${m.slot}`} className={`b-mgr${hot ? " hot" : ""}${m.squadComplete || posFull ? " done" : ""}`}>
                     <div className="mn">
                       <Link href={`/manager/${m.slot}`}>{abbr(m.short)}</Link>
-                      <span className="mrem">{money(m.remaining)}</span>
+                      {m.squadComplete ? (
+                        <span className="mmax">{m.squad.length}/{size}</span>
+                      ) : posFull ? (
+                        <span className="mmax">{lotPos} full</span>
+                      ) : (
+                        <span className="mmax">max {money(m.maxBid)}</span>
+                      )}
                     </div>
-                    {m.squadComplete ? (
-                      <div className="tag big">{m.squad.length}/{size} Complete</div>
-                    ) : posFull ? (
-                      <div className="tag big">{lotPos} full</div>
-                    ) : (
-                      <div className="mr">{money(m.maxBid)}</div>
-                    )}
+                    <div className="mr">{money(m.remaining)}</div>
                     <div className="mf">
                       {POSITIONS.map((p) =>
                         lotPos === p ? (

@@ -73,7 +73,7 @@ function ManagerCell({ m, byId }: { m: PlayersManager; byId: Map<number, PlayerR
       </div>
       {top.map((p) => (
         <Link href={`/player/${p.id}`} className="pr pr-link" key={p.id}>
-          <span className="cdot" style={{ background: clubDot(p.teamShort) }} />
+          <span className={`posmark ${p.position.toLowerCase()}`} title={p.position}>{POS_LETTER[p.position]}</span>
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.displayName ?? p.name ?? "?"}</span>
           <span className="tn">T{p.tier ?? "?"}</span>
           <span className="p" style={{ color: priceColorVar(p.verdict) }}>{money(p.price)}</span>
