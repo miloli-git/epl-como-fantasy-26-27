@@ -27,6 +27,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ManagerState, StatePayload } from "@/lib/state";
+import { usePolledPlayers } from "@/components/tv-common";
 
 const TV_VIEWS = ["block", "reveal", "squads", "ledger", "paused"] as const;
 
@@ -149,10 +150,17 @@ function checkVerdict(
 
 export default function Console() {
   const { payload, connected } = usePolledState();
+  // The whole-pool payload (#65): powers the phase-2 nominate-by-name search.
+  // Read-only, version-gated, so a just-sold player drops out of the results.
+  const { payload: playersPayload, connected: playersConnected } = usePolledPlayers();
   const [token, setToken] = useState("");
   const [winnerSlot, setWinnerSlot] = useState<number | null>(null);
   const [priceText, setPriceText] = useState("");
-  const [nomineeText, setNomineeText] = useState("");
+  // Phase-2 nomination search (#65): a free-text query over unsold players plus
+  // the id the auctioneer has picked to put on the block (replaces the old raw
+  // player-id input).
+  const [nomQuery, setNomQuery] = useState("");
+  const [selectedNomId, setSelectedNomId] = useState<number | null>(null);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -180,10 +188,13 @@ export default function Console() {
   const lotId = lot?.id ?? null;
 
   // A stale selection must never survive a lot change: clear the picked
-  // winner and the typed price whenever the lot on the block changes.
+  // winner, the typed price, and any in-progress nomination search whenever the
+  // lot on the block changes (e.g. a nomination just landed).
   useEffect(() => {
     setWinnerSlot(null);
     setPriceText("");
+    setNomQuery("");
+    setSelectedNomId(null);
   }, [lotId]);
 
   const managers = payload?.managers ?? [];
@@ -191,6 +202,28 @@ export default function Console() {
   const priceDigits = digitsOnly(priceText);
   const price = priceDigits ? parseInt(priceDigits, 10) : null;
   const verdict = checkVerdict(lot, winner, price);
+
+  // ---- phase-2 nominate-by-name search (#65) ----
+  // Match unsold players against the query (display name or raw name), most
+  // last-season points first so marquee names surface. A short list keeps the
+  // operator screen usable; a >=2 char floor avoids dumping the whole pool.
+  const nomQ = nomQuery.trim().toLowerCase();
+  const nomMatches =
+    nomQ.length >= 2 && playersPayload
+      ? playersPayload.players
+          .filter(
+            (p) =>
+              !p.sold &&
+              (`${p.displayName ?? ""}`.toLowerCase().includes(nomQ) ||
+                `${p.name ?? ""}`.toLowerCase().includes(nomQ)),
+          )
+          .sort((a, b) => (b.pts ?? 0) - (a.pts ?? 0))
+          .slice(0, 8)
+      : [];
+  const selectedNom =
+    selectedNomId != null
+      ? playersPayload?.players.find((p) => p.id === selectedNomId) ?? null
+      : null;
 
   // A manager picked on one side of a trade must never linger as an option
   // (or an owned-player list) on the other side.
@@ -271,6 +304,22 @@ export default function Console() {
     if (ok) {
       setWinnerSlot(null);
       setPriceText("");
+    }
+  }
+
+  /** Phase-2 (#65): put the searched-and-selected player on the block. Sends
+   * the same nominate action the old numeric input did; the server validates
+   * the turn, that the player exists and is unsold, and puts it on the block. */
+  async function nominate() {
+    if (selectedNomId == null || payload?.nominationTurn == null) return;
+    const { ok } = await write("/api/lot", "POST", {
+      action: "nominate",
+      playerId: selectedNomId,
+      managerSlot: payload.nominationTurn,
+    });
+    if (ok) {
+      setNomQuery("");
+      setSelectedNomId(null);
     }
   }
 
@@ -618,31 +667,75 @@ export default function Console() {
                 Nomination: Manager {payload.nominationTurn ?? "?"}
                 {nominatorShort ? ` (${nominatorShort})` : ""}
               </p>
-              <p>
-                <label>
-                  player id{" "}
-                  <input
-                    data-testid="nominate-player-id"
-                    inputMode="numeric"
-                    value={nomineeText}
-                    onChange={(e) => setNomineeText(e.target.value)}
-                  />
-                </label>{" "}
+              {/* #65: search the pool by name and put the called player on the
+                  block. Replaces the raw player-id input - the auctioneer types
+                  the name they hear called, picks the match, and nominates. */}
+              <div className="con-nom">
+                <input
+                  data-testid="nominate-search"
+                  className="con-nominput"
+                  type="text"
+                  placeholder="search a player by name..."
+                  value={nomQuery}
+                  onChange={(e) => {
+                    setNomQuery(e.target.value);
+                    setSelectedNomId(null);
+                  }}
+                  aria-label="Search a player to nominate"
+                />
+                {selectedNomId == null && nomMatches.length > 0 && (
+                  <ul className="con-nomlist" data-testid="nominate-results">
+                    {nomMatches.map((p) => (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          data-testid={`nominate-result-${p.id}`}
+                          className="con-nomitem"
+                          onClick={() => {
+                            setSelectedNomId(p.id);
+                            setNomQuery(p.displayName ?? p.name ?? "");
+                          }}
+                        >
+                          <span className="nm">{p.displayName ?? p.name ?? "?"}</span>
+                          <span className="con-nommeta">
+                            {p.position} - {p.teamShort ?? "?"} - T{p.tier ?? "?"}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {/* Distinguish the empty states so the box never reads "no such
+                    player" when the truth is "pool not loaded yet" or "type
+                    more" (a live auctioneer must trust an empty result). */}
+                {selectedNomId == null && nomQ.length >= 1 && playersPayload == null && (
+                  <p className="con-tempty" data-testid="nominate-loading">
+                    {playersConnected ? "Loading the player pool..." : "Connection lost - retrying..."}
+                  </p>
+                )}
+                {selectedNomId == null && playersPayload != null && nomQ.length === 1 && (
+                  <p className="con-tempty">Type at least 2 letters to search.</p>
+                )}
+                {selectedNomId == null && playersPayload != null && nomQ.length >= 2 && nomMatches.length === 0 && (
+                  <p className="con-tempty" data-testid="nominate-noresults">
+                    No unsold player matches &quot;{nomQuery.trim()}&quot;.
+                  </p>
+                )}
+                {selectedNom && (
+                  <p className="con-nomsel" data-testid="nominate-selected">
+                    On the block: <strong>{selectedNom.displayName ?? selectedNom.name}</strong>{" "}
+                    ({selectedNom.position} - {selectedNom.teamShort ?? "?"} - T{selectedNom.tier ?? "?"})
+                  </p>
+                )}
                 <button
                   data-testid="nominate"
                   className="con-btn primary"
-                  disabled={!/^[0-9]+$/.test(nomineeText) || payload.nominationTurn == null}
-                  onClick={() =>
-                    write("/api/lot", "POST", {
-                      action: "nominate",
-                      playerId: parseInt(nomineeText, 10),
-                      managerSlot: payload.nominationTurn,
-                    })
-                  }
+                  disabled={selectedNomId == null || payload.nominationTurn == null || busy}
+                  onClick={nominate}
                 >
-                  Nominate
+                  Put on block
                 </button>
-              </p>
+              </div>
             </div>
           ) : (
             <ol data-testid="up-next" className="con-qlist">

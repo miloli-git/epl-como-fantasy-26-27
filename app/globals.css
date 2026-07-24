@@ -684,6 +684,49 @@ table.led { border-collapse: collapse; width: 100%; font-size: 19px; }
 .con-qrow { padding: 7px 0; border-bottom: 1px solid var(--hair); }
 .con-qrow:last-child { border-bottom: none; }
 
+/* Phase-2 nominate-by-name search (#65) */
+.con-nom { margin-top: 10px; }
+.con-nominput {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 16px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #343936;
+  border-radius: 10px;
+  background: #232725;
+  color: var(--ink);
+}
+.con-nominput:focus { outline: none; border-color: var(--bronze); }
+.con-nomlist {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid #343936;
+  border-radius: 10px;
+}
+.con-nomlist li { border-bottom: 1px solid var(--hair); }
+.con-nomlist li:last-child { border-bottom: none; }
+.con-nomitem {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 15px;
+}
+.con-nomitem:hover { background: var(--chip); }
+.con-nomitem .nm { font-weight: 600; }
+.con-nommeta { color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+.con-nomsel { margin: 10px 0 0; font-size: 14px; color: var(--ink); }
+
 /* Night progress readout */
 .con-prog {
   background: #232725;
