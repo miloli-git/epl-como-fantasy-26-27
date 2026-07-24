@@ -2,7 +2,7 @@
 
 // TV verification route - lets the operator page through all 20 Premier
 // League clubs on the actual draft-night display before doors open, to
-// confirm each club's crest asset path, band/photo-ground colour wash and
+// confirm each club's jersey asset path, band/photo-ground colour wash and
 // on-band text contrast render correctly. No live-state poll - this is a
 // static confirmation aid, not a board view - but it reuses the exact same
 // classes (.b-band/.b-bio/.b-photo/.b-plate) and CSS-variable technique
@@ -18,21 +18,21 @@ import type { CSSProperties } from "react";
 import { useSearchParams } from "next/navigation";
 import clubColors from "@/lib/club-colors.json";
 import { washForClub } from "@/lib/club-core.mjs";
-import { PL_BADGE, SILHOUETTE, crestErr } from "@/components/tv-common";
+import { PL_KIT, SILHOUETTE, crestErr } from "@/components/tv-common";
 
 // Club short codes in club-colors.json's key order - both the gallery grid
 // and the prev/next cycle on the single-club panel walk this same list, so
 // "next" from the last card wraps to the first without a special case.
 const CLUB_SHORTS = Object.keys(clubColors.clubs);
 
-/** Crest: local asset first, PL CDN fallback, then hidden on error - the same
- * three-step chain the real board uses, so this route checks the identical
- * asset path (crestErr lives in tv-common.tsx, shared with the board). */
-function Crest({ code }: { code: number }) {
+/** Kit: local asset first, PL CDN fallback, then hidden on error - the same
+ * three-step chain the real board uses for the club jersey (#68), so this route
+ * checks the identical asset path (crestErr lives in tv-common.tsx, shared). */
+function Kit({ code }: { code: number }) {
   return (
     <img
-      src={`/assets/badges/t${code}.png`}
-      data-cdn={`${PL_BADGE}/badges/100/t${code}@x2.png`}
+      src={`/assets/kits/t${code}.png`}
+      data-cdn={`${PL_KIT}/shirt_${code}-110.png`}
       alt=""
       onError={crestErr}
     />
@@ -55,7 +55,7 @@ function Gallery() {
     <div data-testid="preview-gallery">
       <h1>Club preview</h1>
       <p>
-        All 20 clubs at a glance - band colour, crest and photo-ground wash. Click a club to fill
+        All 20 clubs at a glance - band colour, jersey and photo-ground wash. Click a club to fill
         the screen with the same treatment the real board uses for that club&apos;s lot.
       </p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: 14 }}>
@@ -70,7 +70,7 @@ function Gallery() {
               style={{ display: "block", borderRadius: 10, overflow: "hidden", boxShadow: "var(--shadow-sm)" }}
             >
               <div className="b-band" style={bandVars}>
-                {wash.code != null && <Crest code={wash.code} />}
+                {wash.code != null && <Kit code={wash.code} />}
                 <div className="b-band-txt">
                   <div className="club" style={{ fontSize: 20 }}>{wash.name}</div>
                 </div>
@@ -131,7 +131,7 @@ function ClubPanel({ clubParam }: { clubParam: string }) {
         style={{ ...clubVars, width: "100%", height: "72vh", borderRadius: 10, overflow: "hidden", boxShadow: "var(--shadow-md)" }}
       >
         <div className="b-band">
-          {wash.code != null && <Crest code={wash.code} />}
+          {wash.code != null && <Kit code={wash.code} />}
           <div className="b-band-txt">
             <div className="club">{wash.name}</div>
             {wash.nick && <div className="clubsub">{wash.nick} - {wash.stadium}</div>}

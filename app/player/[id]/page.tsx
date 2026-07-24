@@ -21,7 +21,7 @@ import clubColors from "@/lib/club-colors.json";
 import { washForClub } from "@/lib/club-core.mjs";
 import type { PlayerDetailPayload } from "@/lib/player-detail";
 import {
-  PL_BADGE,
+  PL_KIT,
   PL_PHOTO,
   SILHOUETTE,
   abbr,
@@ -223,8 +223,9 @@ function DesktopDetail({ payload }: { payload: PlayerDetailPayload }) {
               <div className="b-band">
                 {p.teamCode != null && (
                   <img
-                    src={`/assets/badges/t${p.teamCode}.png`}
-                    data-cdn={`${PL_BADGE}/badges/100/t${p.teamCode}@x2.png`}
+                    className="b-kit"
+                    src={`/assets/kits/t${p.teamCode}.png`}
+                    data-cdn={`${PL_KIT}/shirt_${p.teamCode}-110.png`}
                     alt=""
                     onError={crestErr}
                   />

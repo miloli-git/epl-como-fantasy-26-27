@@ -24,6 +24,20 @@ export const SILHOUETTE =
 // premierleague26) during the pre-flight photo cache near the pool freeze.
 export const PL_PHOTO = "https://resources.premierleague.com/premierleague25";
 export const PL_BADGE = "https://resources.premierleague.com/premierleague";
+// Club JERSEY / kit image (#68), used instead of the crest for club identity.
+// Different host from photos/badges - the FPL game's shirt sprites. Verified
+// live 24 Jul 2026: shirt_{team_code}-66.png (and -110) return image/png for
+// current-season clubs; old/relegated codes 404 (the same local -> CDN -> hide
+// fallback as crests handles that). team_code is the same code as the badge.
+export const PL_KIT = "https://fantasy.premierleague.com/dist/img/shirts/standard";
+/** Local-first kit asset path (cached at freeze by scripts/cache-assets.mjs). */
+export function kitLocal(teamCode: number): string {
+  return `/assets/kits/t${teamCode}.png`;
+}
+/** PL CDN kit URL (the data-cdn fallback). */
+export function kitCdn(teamCode: number): string {
+  return `${PL_KIT}/shirt_${teamCode}-66.png`;
+}
 
 export function money(n: number | null | undefined): string {
   return n == null ? "?" : `$${n.toLocaleString()}`;
@@ -240,6 +254,40 @@ export function crestErr(e: React.SyntheticEvent<HTMLImageElement>) {
     return;
   }
   el.style.display = "none";
+}
+
+// Club identity (#68): a jersey/kit image plus the 3-letter club label, shown
+// instead of the crest wherever a club is identified on the room screens. The
+// jersey follows the same local -> CDN -> hide chain as the crest (a missing
+// kit hides the image but keeps the label), so a club with no kit yet still
+// reads by its 3-letter code. `size` is the jersey height in px.
+export function ClubKit({
+  teamCode,
+  teamShort,
+  size = 20,
+  showLabel = true,
+}: {
+  teamCode: number | null | undefined;
+  teamShort: string | null | undefined;
+  size?: number;
+  /** Hide the 3-letter label where it is already shown nearby (e.g. phone sub-lines). */
+  showLabel?: boolean;
+}) {
+  return (
+    <span className="clubkit">
+      {teamCode != null && (
+        <img
+          className="kit"
+          src={kitLocal(teamCode)}
+          data-cdn={kitCdn(teamCode)}
+          alt={showLabel ? "" : (teamShort ?? "")}
+          style={{ height: size }}
+          onError={crestErr}
+        />
+      )}
+      {showLabel && <span className="kitlbl">{teamShort ?? "?"}</span>}
+    </span>
+  );
 }
 
 // ---- Phone bottom navigation (#45) -----------------------------------------

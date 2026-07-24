@@ -10,6 +10,9 @@
 //             (still ~2x), plenty for the face thumbnail.
 //   badges: premierleague/badges/100/t{code}@x2.png
 //           - UNCHANGED - crests are still on the old unscoped path.
+//   kits:   fantasy.premierleague.com/dist/img/shirts/standard/shirt_{code}-110.png
+//           - the club JERSEY (#68), the club identity the room now shows in
+//             place of the crest. Different host; team_code is the same code.
 // SEASON NOTE: "premierleague25" is season-scoped and may roll to premierleague26.
 // Re-verify one photo URL by hand at the pre-flight cache near the pool freeze.
 //
@@ -25,6 +28,7 @@
 //   public/assets/players/250/p{code}.png   big board portrait (500x500 from the CDN)
 //   public/assets/players/110/p{code}.png   face thumbnail (219x280 from the CDN)
 //   public/assets/badges/t{code}.png        club crest (200x200 from the CDN)
+//   public/assets/kits/t{code}.png          club jersey/kit (#68, 110px shirt)
 //   public/assets/silhouette.svg            neutral fallback (never a broken image)
 //   public/assets/asset-cache-report.json   machine-readable run summary + missing list
 //
@@ -76,12 +80,19 @@ const PHOTO_110 = (code) =>
 // Crests are still on the old unscoped badges path - do not season-scope this.
 const CREST = (teamCode) =>
   `https://resources.premierleague.com/premierleague/badges/100/t${teamCode}@x2.png`;
+// Club JERSEY / kit (#68), now shown instead of the crest for club identity.
+// Different host (the FPL game's shirt sprites); the -110 size is crisp on the
+// board band and downscales cleanly to the small ledger/squads rows. Verified
+// live 24 Jul 2026. team_code is the same code as the crest.
+const KIT = (teamCode) =>
+  `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}-110.png`;
 
 const dir250 = join(root, "public", "assets", "players", "250");
 const dir110 = join(root, "public", "assets", "players", "110");
 const badgesDir = join(root, "public", "assets", "badges");
+const kitsDir = join(root, "public", "assets", "kits");
 const assetsDir = join(root, "public", "assets");
-for (const d of [dir250, dir110, badgesDir]) mkdirSync(d, { recursive: true });
+for (const d of [dir250, dir110, badgesDir, kitsDir]) mkdirSync(d, { recursive: true });
 
 // Neutral silhouette fallback (written once; the board points <img> onError here).
 const SILHOUETTE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 250"><rect width="250" height="250" fill="#2a2f2b"/><g fill="#565c54"><circle cx="125" cy="98" r="46"/><path d="M40 250c0-52 38-84 85-84s85 32 85 84z"/></g></svg>`;
@@ -197,16 +208,19 @@ try {
   const teamCodes = [...new Set(players.map((p) => p.team_code).filter((c) => c != null))];
   let photoRows = sample ? players.slice(0, 5) : players;
   if (maxPlayers != null) photoRows = photoRows.slice(0, maxPlayers);
-  const crestCodes = sample ? teamCodes.slice(0, 5) : teamCodes;
+  const clubCodes = sample ? teamCodes.slice(0, 5) : teamCodes;
 
   const jobs = [
     ...photoRows.map((p) => ({ url: PHOTO_250(p.code), dest: join(dir250, `p${p.code}.png`), label: `250 p${p.code} (${p.web_name})` })),
     ...photoRows.map((p) => ({ url: PHOTO_110(p.code), dest: join(dir110, `p${p.code}.png`), label: `110 p${p.code} (${p.web_name})` })),
-    ...crestCodes.map((c) => ({ url: CREST(c), dest: join(badgesDir, `t${c}.png`), label: `crest t${c}` })),
+    // Crests are still cached (kept for any legacy surface); kits (#68) are the
+    // club identity the room now shows, so both club assets are pre-flighted.
+    ...clubCodes.map((c) => ({ url: CREST(c), dest: join(badgesDir, `t${c}.png`), label: `crest t${c}` })),
+    ...clubCodes.map((c) => ({ url: KIT(c), dest: join(kitsDir, `t${c}.png`), label: `kit t${c}` })),
   ];
 
   console.log(
-    `caching ${photoRows.length} players x2 sizes + ${crestCodes.length} crests` +
+    `caching ${photoRows.length} players x2 sizes + ${clubCodes.length} crests + ${clubCodes.length} kits` +
     (demo ? " (demo scope)" : sample ? " (sample)" : "") +
     ` at concurrency ${CONCURRENCY}, ${PAUSE_MS}ms pause; silhouette written`,
   );

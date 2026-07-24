@@ -30,7 +30,10 @@ const SILHOUETTE =
 // freeze (it may roll to premierleague26). Kept local to match this file's
 // self-contained style; the shared copies live in components/tv-common.tsx.
 const PL_PHOTO = "https://resources.premierleague.com/premierleague25";
-const PL_BADGE = "https://resources.premierleague.com/premierleague";
+// Club JERSEY / kit sprite (#68), shown in the club band instead of the crest.
+// Different host from photos/badges; team_code is the same code. Local cache is
+// filled by scripts/cache-assets.mjs; a missing kit hides (never a silhouette).
+const PL_KIT = "https://fantasy.premierleague.com/dist/img/shirts/standard";
 // Grey shades for the pool bar's tier segments (T1 darkest -> T4 lightest).
 const TIER_SHADE: Record<number, string> = { 1: "#3a3f38", 2: "#5c635a", 3: "#878e82", 4: "#b7bdb1" };
 
@@ -354,8 +357,9 @@ export default function Board() {
                   <div className="b-band">
                     {lot.teamCode != null && (
                       <img
-                        src={`/assets/badges/t${lot.teamCode}.png`}
-                        data-cdn={`${PL_BADGE}/badges/100/t${lot.teamCode}@x2.png`}
+                        className="b-kit"
+                        src={`/assets/kits/t${lot.teamCode}.png`}
+                        data-cdn={`${PL_KIT}/shirt_${lot.teamCode}-110.png`}
                         alt=""
                         onError={crestErr}
                       />

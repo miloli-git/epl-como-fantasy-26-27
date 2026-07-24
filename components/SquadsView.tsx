@@ -9,7 +9,7 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import type { Position } from "@/lib/config";
 import type { PlayerRow, PlayersManager, PlayersPayload } from "@/lib/players";
-import { PhoneNav, abbr, clubDot, money, useBoardScale, useIsPhone, usePolledPlayers } from "./tv-common";
+import { ClubKit, PhoneNav, abbr, money, useBoardScale, useIsPhone, usePolledPlayers } from "./tv-common";
 
 const POSITIONS: Position[] = ["GK", "DEF", "MID", "FWD"];
 const POS_LETTER: Record<Position, string> = { GK: "G", DEF: "D", MID: "M", FWD: "F" };
@@ -75,6 +75,7 @@ function ManagerCell({ m, byId }: { m: PlayersManager; byId: Map<number, PlayerR
         <Link href={`/player/${p.id}`} className="pr pr-link" key={p.id}>
           <span className={`posmark ${p.position.toLowerCase()}`} title={p.position}>{POS_LETTER[p.position]}</span>
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.displayName ?? p.name ?? "?"}</span>
+          <ClubKit teamCode={p.teamCode} teamShort={p.teamShort} size={16} />
           <span className="tn">T{p.tier ?? "?"}</span>
           <span className="p" style={{ color: priceColorVar(p.verdict) }}>{money(p.price)}</span>
         </Link>
@@ -110,7 +111,7 @@ function PhoneManagerCard({ m, byId, squadSize }: { m: PlayersManager; byId: Map
       <div className="ph-players">
         {owned.map((p) => (
           <Link href={`/player/${p.id}`} className="ph-prow ph-prow-link" key={p.id}>
-            <span className="ph-dot" style={{ background: clubDot(p.teamShort) }} />
+            <ClubKit teamCode={p.teamCode} teamShort={p.teamShort} size={18} showLabel={false} />
             <span className="ph-pname">{p.displayName ?? p.name ?? "?"}</span>
             <span className="chip ph-chip">{p.position} T{p.tier ?? "?"}</span>
             <span className="ph-price">{money(p.price)}</span>

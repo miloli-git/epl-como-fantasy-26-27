@@ -12,7 +12,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Position } from "@/lib/config";
 import type { PlayerRow, PlayersPayload } from "@/lib/players";
-import { PL_PHOTO, PhoneNav, SILHOUETTE, abbr, clubDot, money, ownerColor, photoErr, useBoardScale, useIsPhone, usePolledPlayers } from "./tv-common";
+import { ClubKit, PL_PHOTO, PhoneNav, SILHOUETTE, abbr, money, ownerColor, photoErr, useBoardScale, useIsPhone, usePolledPlayers } from "./tv-common";
 
 /** The read-only spotlight route for a player row (#51). */
 function playerHref(id: number): string {
@@ -74,8 +74,7 @@ function Row({ p }: { p: PlayerRow }) {
         </span>
       </td>
       <td>
-        <span className="cdot" style={{ background: clubDot(p.teamShort) }} />
-        {p.teamShort ?? "?"}
+        <ClubKit teamCode={p.teamCode} teamShort={p.teamShort} size={22} />
       </td>
       <td>{p.position}</td>
       <td>{p.tier ?? "-"}</td>
@@ -161,7 +160,7 @@ function PhoneLedgerRow({ p }: { p: PlayerRow }) {
     return (
       <Link className="ph-card ph-ledger-row ph-ledger-unsold pd-rowlink" href={href} data-testid={`ph-ledger-${p.id}`}>
         <div className="ph-ledger-left">
-          <span className="ph-dot" style={{ background: clubDot(p.teamShort) }} />
+          <ClubKit teamCode={p.teamCode} teamShort={p.teamShort} size={20} showLabel={false} />
           <div style={{ minWidth: 0 }}>
             <div className="ph-ledger-name">{p.displayName ?? p.name ?? "?"}</div>
             <div className="ph-sub">
@@ -178,7 +177,7 @@ function PhoneLedgerRow({ p }: { p: PlayerRow }) {
   return (
     <Link className="ph-card ph-ledger-row pd-rowlink" href={href} data-testid={`ph-ledger-${p.id}`}>
       <div className="ph-ledger-left">
-        <span className="ph-dot" style={{ background: clubDot(p.teamShort) }} />
+        <ClubKit teamCode={p.teamCode} teamShort={p.teamShort} size={20} showLabel={false} />
         <div style={{ minWidth: 0 }}>
           <div className="ph-ledger-name">{p.displayName ?? p.name ?? "?"}</div>
           <div className="ph-sub">

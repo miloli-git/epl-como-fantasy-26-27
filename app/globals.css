@@ -446,7 +446,9 @@ footer { margin-top: 20px; color: var(--muted); font-size: 12px; }
 .sq .val .v { font-family: var(--font-display); font-weight: 300; font-size: 29px; letter-spacing: -0.02em; }
 .sq .val .v.sealed { font-size: 20px; }
 .sq .val .pill { margin-left: auto; font-size: 15px; padding: 3px 13px; }
-.sq .pr { display: grid; grid-template-columns: 17px 1fr 34px 56px; gap: 9px; padding: 5px 0; font-size: 15.5px; border-bottom: 1px solid var(--hair); align-items: center; }
+.sq .pr { display: grid; grid-template-columns: 17px 1fr auto 34px 56px; gap: 9px; padding: 5px 0; font-size: 15.5px; border-bottom: 1px solid var(--hair); align-items: center; }
+/* Club jersey + label (#68) sits between the name and the tier in a squad row. */
+.sq .pr .clubkit { font-size: 12.5px; color: var(--muted); gap: 5px; }
 .sq .pr:last-of-type { border-bottom: none; }
 .sq .cdot { width: 9px; height: 9px; border-radius: 50%; }
 
@@ -474,6 +476,12 @@ table.led { border-collapse: collapse; width: 100%; font-size: 19px; }
 .led th:nth-child(-n+4) { text-align: left; }
 .led td { padding: 6.5px 14px; border-bottom: 1px solid var(--hair); text-align: right; white-space: nowrap; }
 .led td:nth-child(-n+4) { text-align: left; }
+/* Club identity (#68): jersey + 3-letter label, shown instead of the crest.
+   flex:0 0 auto so a long player name in a phone row shrinks the name, never
+   the jersey (matches .ph-dot/.ph-chip/.ph-price, the siblings it sits with). */
+.clubkit { display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; }
+.clubkit .kit { width: auto; object-fit: contain; flex: 0 0 auto; }
+
 /* Owner cell (#69): coloured per owner, consistent with OWNER_COLORS. */
 .led .owncell { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
 .led .owndot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
