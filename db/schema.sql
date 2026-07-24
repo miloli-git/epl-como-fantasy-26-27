@@ -115,6 +115,54 @@ create table if not exists briefs (
   swept_at  timestamptz
 );
 
+-- Historical per-season stats (#60/#61), populated by scripts/ingest-history.mjs
+-- from a version-pinned public dataset (Vaastav/Fantasy-Premier-League), joined
+-- by the stable FPL `code` - NOT player_id (element ids change yearly). PUBLIC
+-- FPL stats only, no league data, so no sealing concern. This is read-only
+-- reference data for the player page; it never feeds the auction, pricing or
+-- valuations. A NULL numeric means the category did not exist that season (N/A,
+-- e.g. expected_* before 2022-23, def_contribution before 2025-26); a player
+-- simply absent from a season has no row (rendered as "Not in FPL").
+create table if not exists player_history (
+  code             integer not null,   -- stable FPL code (join key), not element id
+  season           text not null,      -- "2024-25"
+  position         text,               -- position that season
+  total_points     integer,            -- official FPL total (shown exactly, from source)
+  minutes          integer,
+  starts           integer,
+  goals            integer,
+  assists          integer,
+  clean_sheets     integer,
+  goals_conceded   integer,
+  saves            integer,
+  pens_saved       integer,
+  pens_missed      integer,
+  bonus            integer,
+  yellows          integer,
+  reds             integer,
+  own_goals        integer,
+  def_contribution integer,            -- N/A (null) before 2025-26
+  xg               numeric,            -- expected goals; N/A (null) before 2022-23
+  xa               numeric,            -- expected assists
+  xgi              numeric,            -- expected goal involvements
+  xgc              numeric,            -- expected goals conceded
+  influence        numeric,
+  creativity       numeric,
+  threat           numeric,
+  ict_index        numeric,
+  primary key (code, season)
+);
+
+-- Provenance for the historical ingest (single row): where the data came from
+-- and the exact pinned source commit, so the dataset is reproducible.
+create table if not exists player_history_meta (
+  id           integer primary key check (id = 1),
+  source       text,
+  commit_sha   text,
+  seasons      text,
+  generated_at timestamptz
+);
+
 -- Draft-morning reveal band (#70). The steal/fair/overpay verdict band is NOT a
 -- fixed config number: the valuations job (scripts/generate-valuations.mjs)
 -- calibrates it from the day's valuations and writes it here (singleton, id=1).

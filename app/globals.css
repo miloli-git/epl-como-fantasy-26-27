@@ -1091,6 +1091,29 @@ table.led { border-collapse: collapse; width: 100%; font-size: 19px; }
 .pd-sale-price { font-size: 22px; font-weight: 300; }
 .pd-sale-val { color: var(--bronze); font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; font-size: 14px; }
 
+/* Player-page deep dive (#60/#61): normal-flow cards below the scaled canvas. */
+.pd-deep { max-width: 1100px; margin: 18px auto 40px; padding: 0 20px; display: flex; flex-direction: column; gap: 18px; }
+.pd-deep-card { margin-top: 14px; }
+.pd-deep-h { font-family: var(--font-display); font-weight: 700; font-size: 13px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.pd-hist { background: var(--card); border: 1px solid var(--hair); border-radius: 12px; padding: 16px 18px; }
+.pd-hist-scroll { overflow-x: auto; }
+.pd-hist-table { border-collapse: collapse; width: 100%; font-size: 15px; }
+.pd-hist-table th, .pd-hist-table td { padding: 7px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--hair); }
+.pd-hist-table th { font-family: var(--font-display); font-weight: 700; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.pd-hist-table th:first-child, .pd-hist-table td:first-child,
+.pd-hist-table th:nth-child(2), .pd-hist-table td:nth-child(2) { text-align: left; }
+.pd-hist-table tbody tr:last-child td { border-bottom: none; }
+.pd-hist-pts { font-weight: 700; color: var(--ink); }
+.pd-hist-absent td { color: var(--muted); font-style: italic; }
+
+/* Advanced & expected panel (#60). */
+.pd-adv { background: var(--card); border: 1px solid var(--hair); border-radius: 12px; padding: 16px 18px; }
+.pd-adv-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+.pd-adv-tile { background: var(--chip); border: 1px solid var(--hair); border-radius: 10px; padding: 11px 8px; text-align: center; }
+.pd-adv-tile .v { font-size: 19px; font-weight: 700; color: var(--ink); }
+.pd-adv-tile .k { font-size: 11px; color: var(--muted); margin-top: 3px; letter-spacing: 0.02em; }
+.pd-deep-card .pd-adv { border: none; padding: 0; margin-top: 16px; }
+
 /* Clickable ledger rows -> the read-only spotlight (#51). Desktop: the whole
    <tr> navigates, the name is a real focusable link. Phone: the whole card is
    an <a>. */

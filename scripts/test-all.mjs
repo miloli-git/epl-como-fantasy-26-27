@@ -68,7 +68,7 @@ try {
   // Data tables suites mutate; players/managers are the fixed baseline and are
   // NOT truncated (re-ingesting between suites would be slow). None of these is
   // referenced by a table outside the list, so no CASCADE is needed.
-  const MUTABLE = "sales, lot_events, trades, trade_players, valuations, valuation_meta, briefs, season_recap, audit_log";
+  const MUTABLE = "sales, lot_events, trades, trade_players, valuations, valuation_meta, player_history, player_history_meta, briefs, season_recap, audit_log";
   async function resetBaseline() {
     await scratchSql.unsafe(`truncate table ${MUTABLE} restart identity`);
     await scratchSql`delete from managers where slot not in (select slot from _battery_base_slots)`;
@@ -86,6 +86,7 @@ try {
   const suites = [
     ["derive (pure)", ["scripts/test-derive.mjs"]],
     ["club (pure)", ["scripts/test-club.mjs"]],
+    ["history (pure)", ["scripts/test-history.mjs"]],
     ["schema", ["scripts/test-schema.mjs"]],
     ["config", ["scripts/test-config.mjs"]],
     ["ingest", ["scripts/test-ingest.mjs"]],

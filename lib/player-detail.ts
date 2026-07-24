@@ -67,11 +67,48 @@ export interface PlayerSale {
   verdict: Verdict | null;
 }
 
+/** One past season on the player page (#60/#61), joined by the stable FPL code.
+ * A numeric field is null when that category did not exist that season (N/A,
+ * e.g. expected_* before 2022-23, defContribution before 2025-26). A season the
+ * player was absent for is returned as { season, notInFpl: true } with the rest
+ * null. `xg`..`ictIndex` are the advanced/expected metrics surfaced by #60. */
+export interface PlayerSeason {
+  season: string;
+  /** True when the player was not in FPL that season (distinct from N/A nulls). */
+  notInFpl: boolean;
+  position: Position | null;
+  totalPoints: number | null;
+  minutes: number | null;
+  starts: number | null;
+  goals: number | null;
+  assists: number | null;
+  cleanSheets: number | null;
+  goalsConceded: number | null;
+  saves: number | null;
+  pensSaved: number | null;
+  pensMissed: number | null;
+  bonus: number | null;
+  yellows: number | null;
+  reds: number | null;
+  ownGoals: number | null;
+  defContribution: number | null;
+  xg: number | null;
+  xa: number | null;
+  xgi: number | null;
+  xgc: number | null;
+  influence: number | null;
+  creativity: number | null;
+  threat: number | null;
+  ictIndex: number | null;
+}
+
 export interface PlayerDetailPayload {
   version: number;
   player: PlayerDetail;
   /** Null unless the player is sold (#51: full spotlight + sale result). */
   sale: PlayerSale | null;
+  /** Up to five past seasons, chronological (#60/#61). Empty if not ingested. */
+  history: PlayerSeason[];
   generatedAt: string;
 }
 

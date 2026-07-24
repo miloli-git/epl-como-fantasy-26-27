@@ -46,6 +46,9 @@ const TRADED_VALUE = 300;
 const TRADED_PRICE = 250; // salary travels with the player through the trade
 const MANAGER_SLOT = 1;
 const MANAGER_SLOT_2 = 2;
+// A filler code present in every window season, so the 5-season window is full
+// even where the SOLD player (code == SOLD_ID) is absent (#60/#61 history test).
+const HIST_FILLER_CODE = 999950;
 
 let failed = false;
 function report(name, ok, detail = "") {
@@ -81,6 +84,7 @@ async function cleanup() {
   }
   await sql`delete from sales where player_id in ${sql(ALL_IDS)}`;
   await sql`delete from valuations where player_id in ${sql(ALL_IDS)}`;
+  await sql`delete from player_history where code in ${sql([SOLD_ID, HIST_FILLER_CODE])}`;
   await sql`delete from players where id in ${sql(ALL_IDS)}`;
   if (createdManagerIds.length > 0) {
     await sql`delete from managers where id in ${sql(createdManagerIds)}`;
@@ -233,6 +237,51 @@ try {
   // --- (5) unknown id -> null (route turns this into a 404) ---
   const missing = await buildPlayerDetailPayload(sql, cfg, UNKNOWN_ID);
   report("unknown player id returns null", missing === null, `got ${JSON.stringify(missing)}`);
+
+  // --- (6) five-season history (#60/#61): code-joined, chronological, with
+  // Not-in-FPL and N/A honesty. The filler code fills all five window seasons;
+  // the SOLD player (code == SOLD_ID) is present in only four, skipping 2022-23. ---
+  const WINDOW = ["2021-22", "2022-23", "2023-24", "2024-25", "2025-26"];
+  for (const season of WINDOW) {
+    await sql`insert into player_history (code, season, total_points) values (${HIST_FILLER_CODE}, ${season}, 1)`;
+  }
+  // 2022-23 deliberately omitted for SOLD -> "Not in FPL". xg is N/A in 2021-22
+  // (pre expected-stats); def_contribution is N/A before 2025-26, set in 2025-26.
+  await sql`
+    insert into player_history (code, season, position, total_points, goals, def_contribution, xg)
+    values (${SOLD_ID}, '2021-22', 'FWD', 180, 20, null, null),
+           (${SOLD_ID}, '2023-24', 'FWD', 211, 18, null, 19.2),
+           (${SOLD_ID}, '2024-25', 'FWD', 344, 29, null, 27.5),
+           (${SOLD_ID}, '2025-26', 'FWD', 250, 21, 18, 22.1)
+  `;
+  const hp = await buildPlayerDetailPayload(sql, cfg, SOLD_ID);
+  const h = hp?.history ?? [];
+  report(
+    "history has the full five-season window in chronological order",
+    h.length === 5 && h.map((s) => s.season).join(",") === WINDOW.join(","),
+    h.map((s) => s.season).join(","),
+  );
+  const bySeason = Object.fromEntries(h.map((s) => [s.season, s]));
+  report(
+    "missing season reads Not-in-FPL (2022-23)",
+    bySeason["2022-23"]?.notInFpl === true && bySeason["2021-22"]?.notInFpl === false,
+    `2022-23 notInFpl=${bySeason["2022-23"]?.notInFpl}`,
+  );
+  report(
+    "present season carries the official total + counts",
+    bySeason["2024-25"]?.totalPoints === 344 && bySeason["2024-25"]?.goals === 29,
+    `2024-25 pts=${bySeason["2024-25"]?.totalPoints} g=${bySeason["2024-25"]?.goals}`,
+  );
+  report(
+    "expected metric is N/A (null) before 2022-23, present after",
+    bySeason["2021-22"]?.xg === null && bySeason["2023-24"]?.xg === 19.2,
+    `2021-22 xg=${bySeason["2021-22"]?.xg}, 2023-24 xg=${bySeason["2023-24"]?.xg}`,
+  );
+  report(
+    "defensive contribution is N/A (null) before 2025-26, set in 2025-26",
+    bySeason["2023-24"]?.defContribution === null && bySeason["2025-26"]?.defContribution === 18,
+    `2023-24 def=${bySeason["2023-24"]?.defContribution}, 2025-26 def=${bySeason["2025-26"]?.defContribution}`,
+  );
 } catch (err) {
   console.error("test-player-detail failed to run:", err.message);
   failed = true;

@@ -19,7 +19,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import clubColors from "@/lib/club-colors.json";
 import { washForClub } from "@/lib/club-core.mjs";
-import type { PlayerDetailPayload } from "@/lib/player-detail";
+import type { PlayerDetailPayload, PlayerSeason } from "@/lib/player-detail";
 import {
   PL_KIT,
   PL_PHOTO,
@@ -69,6 +69,115 @@ function usePlayerDetail(id: string | undefined): { payload: PlayerDetailPayload
     };
   }, [id]);
   return { payload, status };
+}
+
+// ---- Deep-dive panels (#60/#61), shared by desktop and phone -----------------
+
+/** A season cell value: N/A when the category did not exist that season. */
+function statCell(v: number | null): string {
+  return v == null ? "N/A" : String(v);
+}
+
+/** #61: five-season points history + exact category breakdown. A table (not a
+ * chart) because the requirement is exact numbers; missing seasons read
+ * "Not in FPL", categories that did not exist read "N/A". Horizontally
+ * scrollable on phone. Renders nothing when there is no history data. */
+function SeasonHistory({ history }: { history: PlayerSeason[] }) {
+  if (!history || history.length === 0) return null;
+  const cols = ["Pts", "Min", "G", "A", "CS", "GC", "Saves", "Bonus", "Def"];
+  return (
+    <div className="pd-hist" data-testid="pd-history">
+      <div className="pd-deep-h">Five-season points and breakdown</div>
+      <div className="pd-hist-scroll">
+        <table className="pd-hist-table">
+          <thead>
+            <tr>
+              <th>Season</th>
+              <th>Pos</th>
+              {cols.map((c) => <th key={c}>{c}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {history.map((s) =>
+              s.notInFpl ? (
+                <tr key={s.season} className="pd-hist-absent">
+                  <td>{s.season}</td>
+                  <td colSpan={cols.length + 1}>Not in FPL</td>
+                </tr>
+              ) : (
+                <tr key={s.season}>
+                  <td>{s.season}</td>
+                  <td>{s.position ?? "-"}</td>
+                  <td className="pd-hist-pts">{statCell(s.totalPoints)}</td>
+                  <td>{statCell(s.minutes)}</td>
+                  <td>{statCell(s.goals)}</td>
+                  <td>{statCell(s.assists)}</td>
+                  <td>{statCell(s.cleanSheets)}</td>
+                  <td>{statCell(s.goalsConceded)}</td>
+                  <td>{statCell(s.saves)}</td>
+                  <td>{statCell(s.bonus)}</td>
+                  <td>{statCell(s.defContribution)}</td>
+                </tr>
+              ),
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/** The most recent season that actually carries advanced/expected data (they
+ * are N/A before 2022-23), scanning newest-first. Null when none qualify. */
+function latestAdvancedSeason(history: PlayerSeason[]): PlayerSeason | null {
+  for (let i = history.length - 1; i >= 0; i--) {
+    const s = history[i];
+    if (!s.notInFpl && s.xg != null) return s;
+  }
+  return null;
+}
+
+/** A per-90 rate from a season total and minutes, rounded to 2dp; null if N/A. */
+function per90(v: number | null, minutes: number | null): number | null {
+  if (v == null || !minutes) return null;
+  return Math.round((v / (minutes / 90)) * 100) / 100;
+}
+
+/** #60: advanced and expected metrics for the latest season that has them,
+ * position-aware (defensive tiles only for GK/DEF/MID). N/A where a metric did
+ * not exist. Renders nothing when no season carries advanced data. */
+function AdvancedMetrics({ history }: { history: PlayerSeason[] }) {
+  const s = latestAdvancedSeason(history);
+  if (!s) return null;
+  const defensive = s.position === "GK" || s.position === "DEF" || s.position === "MID";
+  const tiles: { v: number | null; k: string }[] = [
+    { v: s.xg, k: "xG" },
+    { v: s.xa, k: "xA" },
+    { v: s.xgi, k: "xGI" },
+    { v: per90(s.xgi, s.minutes), k: "xGI / 90" },
+    { v: s.ictIndex, k: "ICT index" },
+    { v: s.influence, k: "Influence" },
+    { v: s.creativity, k: "Creativity" },
+    { v: s.threat, k: "Threat" },
+  ];
+  if (defensive) {
+    tiles.push({ v: s.xgc, k: "xGC" });
+    tiles.push({ v: s.goalsConceded, k: "Goals conceded" });
+    tiles.push({ v: s.defContribution, k: "Def contribution" });
+  }
+  return (
+    <div className="pd-adv" data-testid="pd-advanced">
+      <div className="pd-deep-h">Advanced and expected &middot; {s.season}</div>
+      <div className="pd-adv-tiles">
+        {tiles.map((t, i) => (
+          <div className="pd-adv-tile" key={i}>
+            <div className="v">{t.v == null ? "N/A" : t.v}</div>
+            <div className="k">{t.k}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // ---- Phone layout: collapsing club-washed portrait (mirrors PhoneBoard), then
@@ -146,6 +255,13 @@ function PhoneDetail({ payload }: { payload: PlayerDetailPayload }) {
           ))}
         </div>
       </div>
+
+      {payload.history.length > 0 && (
+        <div className="ph-card pd-deep-card">
+          <SeasonHistory history={payload.history} />
+          <AdvancedMetrics history={payload.history} />
+        </div>
+      )}
 
       <div className="ph-sechead">Bio</div>
       <div className="ph-card">
@@ -318,6 +434,14 @@ function DesktopDetail({ payload }: { payload: PlayerDetailPayload }) {
           </div>
         )}
       </div>
+
+      {/* Deep-dive below the TV canvas (#60/#61): normal-flow cards, not scaled. */}
+      {payload.history.length > 0 && (
+        <div className="pd-deep">
+          <SeasonHistory history={payload.history} />
+          <AdvancedMetrics history={payload.history} />
+        </div>
+      )}
     </div>
   );
 }
